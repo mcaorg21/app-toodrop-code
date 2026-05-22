@@ -3,7 +3,7 @@ builder = "nixpacks"
 buildCommand = "npm install --legacy-peer-deps && npm run build:client"
 
 [deploy]
-startCommand = "node --import tsx/esm src/server/index.ts"
+startCommand = "TSX_TSCONFIG_PATH=tsconfig.server.json node --import tsx/esm src/server/index.ts"
 healthcheckPath = "/health"
 healthcheckTimeout = 30
 restartPolicyType = "on_failure"
