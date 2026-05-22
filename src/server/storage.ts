@@ -6,9 +6,14 @@ export function createStorageService() {
   let storage: Storage;
   try {
     const keyJson = process.env.GCS_SERVICE_ACCOUNT_JSON;
-    if (keyJson) {
-      const credentials = JSON.parse(keyJson);
-      storage = new Storage({ credentials });
+    if (keyJson && keyJson.trim()) {
+      let parsed: object;
+      if (keyJson.trim().startsWith("{")) {
+        parsed = JSON.parse(keyJson);
+      } else {
+        parsed = JSON.parse(Buffer.from(keyJson.trim(), "base64").toString("utf-8"));
+      }
+      storage = new Storage({ credentials: parsed });
     } else {
       // Application Default Credentials (local dev)
       storage = new Storage();
