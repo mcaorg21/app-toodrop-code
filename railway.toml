@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm install --legacy-peer-deps && npm run build:client"
+buildCommand = "npm run build:client"
 
 [deploy]
 startCommand = "TSX_TSCONFIG_PATH=tsconfig.server.json node --import tsx/esm src/server/index.ts"
