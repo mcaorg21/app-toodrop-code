@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useAuth } from "@getmocha/users-service/react";
+import { useAuth } from "@/react-app/hooks/useAuth";
 import { useNavigate } from "react-router";
 import { LoadingScreen } from "@/react-app/components/LoadingScreen";
 

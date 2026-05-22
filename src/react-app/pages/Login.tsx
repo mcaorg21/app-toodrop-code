@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "@getmocha/users-service/react";
+﻿import { useEffect, useState } from "react";
+import { useAuth } from "@/react-app/hooks/useAuth";
 import { Navigate, useSearchParams } from "react-router";
 import { useLoading } from "@/react-app/hooks/useLoading";
 import { useTranslation } from "@/react-app/i18n";
@@ -859,3 +859,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

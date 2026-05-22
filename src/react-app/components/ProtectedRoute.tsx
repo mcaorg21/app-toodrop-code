@@ -1,4 +1,4 @@
-import { useAuth } from "@getmocha/users-service/react";
+﻿import { useAuth } from "@/react-app/hooks/useAuth";
 import { Navigate, useLocation } from "react-router";
 import { Loader2 } from "lucide-react";
 
@@ -22,3 +22,4 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
+

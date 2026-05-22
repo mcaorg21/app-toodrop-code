@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { useAuth } from "@getmocha/users-service/react";
+﻿import { useState, useRef, useEffect } from "react";
+import { useAuth } from "@/react-app/hooks/useAuth";
 import { Power, User as UserIcon, Shield, ChevronDown, ShoppingBag, Home, Truck, Settings, Receipt } from "lucide-react";
 import { Link, useLocation } from "react-router";
 import type { User } from "@/shared/types";
@@ -201,3 +201,4 @@ export function Header({ profile, showAdminLink = false, onProfileUpdate, active
     </header>
   );
 }
+

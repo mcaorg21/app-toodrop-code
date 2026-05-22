@@ -1,6 +1,6 @@
 // Receiver point status endpoints
 import { Hono } from "hono";
-import { authMiddleware } from "@getmocha/users-service/backend";
+import { authMiddleware } from "./middleware/auth";
 
 const app = new Hono<{ Bindings: Env }>();
 

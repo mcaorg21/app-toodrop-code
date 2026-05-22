@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Receipt, Calendar, ChevronLeft, ChevronRight, Loader2, AlertCircle, DollarSign, ChevronDown, X, ArrowDownToLine, Clock, FileText } from "lucide-react";
-import { useAuth } from "@getmocha/users-service/react";
+import { useAuth } from "@/react-app/hooks/useAuth";
 import { useApi } from "@/react-app/hooks/useApi";
 import { Portal } from "@/react-app/components/Portal";
 import { toProperCase, formatCurrency } from "@/react-app/lib/utils";
@@ -139,7 +139,7 @@ export default function ExtractView({ onBack }: ExtractViewProps) {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    }).replace(", ", " às ");
+    }).replace(", ", " Ã s ");
   };
 
   const getTransactionTypeLabel = (type: string) => {
@@ -199,14 +199,14 @@ export default function ExtractView({ onBack }: ExtractViewProps) {
   };
 
   const formatCurrencyInput = (value: string) => {
-    // Remove tudo exceto números
+    // Remove tudo exceto nÃºmeros
     const numericValue = value.replace(/\D/g, '');
     
     if (!numericValue) {
       return '';
     }
     
-    // Converte para número e formata
+    // Converte para nÃºmero e formata
     const numberValue = parseInt(numericValue) / 100;
     return numberValue.toLocaleString('pt-BR', {
       minimumFractionDigits: 2,
@@ -218,7 +218,7 @@ export default function ExtractView({ onBack }: ExtractViewProps) {
     const formatted = formatCurrencyInput(value);
     setWithdrawalDisplayValue(formatted);
     
-    // Armazena o valor numérico
+    // Armazena o valor numÃ©rico
     const numericValue = value.replace(/\D/g, '');
     if (numericValue) {
       const numberValue = parseInt(numericValue) / 100;
@@ -936,3 +936,4 @@ export default function ExtractView({ onBack }: ExtractViewProps) {
     </Portal>
   );
 }
+

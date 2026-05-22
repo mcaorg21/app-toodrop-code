@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router";
-import { AuthProvider } from "@getmocha/users-service/react";
+import { AuthProvider } from "@/react-app/hooks/useAuth";
 import LoginPage from "@/react-app/pages/Login";
 import AuthCallbackPage from "@/react-app/pages/AuthCallback";
 import DashboardPage from "@/react-app/pages/Dashboard";

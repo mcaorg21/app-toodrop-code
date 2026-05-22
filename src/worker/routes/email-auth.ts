@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { setCookie } from "hono/cookie";
-import { MOCHA_SESSION_TOKEN_COOKIE_NAME } from "@getmocha/users-service/backend";
+import { SESSION_COOKIE, signSession } from "../middleware/auth";
 import { emailTemplate, emailHeader, emailBody, emailFooter } from "../utils/email-templates";
 
 const emailAuth = new Hono<{ Bindings: Env }>();
@@ -265,20 +265,35 @@ emailAuth.post("/email-auth/verify", async (c) => {
       return c.json({ error: "Erro ao verificar conta" }, 500);
     }
 
-    // Generate session token
-    const sessionToken = `email_${credentials.id}_${generateSessionToken()}`;
+    // Find or create user record
+    let emailUser = await c.env.DB.prepare(
+      "SELECT id FROM users WHERE email_credential_id = ?"
+    ).bind(credentials.id).first() as { id: number } | null;
+    if (!emailUser) {
+      const placeholderMochaId = `email_auth_${credentials.id}_${Date.now()}`;
+      await c.env.DB.prepare(
+        "INSERT INTO users (mocha_user_id, email_credential_id, email, profile_status) VALUES (?, ?, ?, ?)"
+      ).bind(placeholderMochaId, credentials.id, normalizedEmail, "incomplete").run();
+      emailUser = await c.env.DB.prepare(
+        "SELECT id FROM users WHERE email_credential_id = ?"
+      ).bind(credentials.id).first() as { id: number } | null;
+    }
 
-    // Set session cookie
-    setCookie(c, MOCHA_SESSION_TOKEN_COOKIE_NAME, sessionToken, {
+    const sessionToken = signSession(
+      { userId: emailUser!.id, email: normalizedEmail, type: "email", emailCredentialId: credentials.id as number },
+      c.env.JWT_SECRET
+    );
+
+    setCookie(c, SESSION_COOKIE, sessionToken, {
       httpOnly: true,
       path: "/",
       sameSite: "none",
       secure: true,
-      maxAge: 60 * 24 * 60 * 60, // 60 days
+      maxAge: 60 * 24 * 60 * 60,
     });
 
-    return c.json({ 
-      success: true, 
+    return c.json({
+      success: true,
       message: "Email verificado com sucesso!",
       emailCredentialId: credentials.id
     });
@@ -342,7 +357,7 @@ emailAuth.post("/email-auth/login", async (c) => {
       if (newFailedAttempts >= 3) {
         // Lock account - require password reset
         await c.env.DB.prepare(
-          "UPDATE email_credentials SET failed_attempts = ?, locked_until = datetime('now', '+24 hours'), updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+          "UPDATE email_credentials SET failed_attempts = ?, locked_until = NOW() + INTERVAL '24 hours', updated_at = CURRENT_TIMESTAMP WHERE id = ?"
         ).bind(newFailedAttempts, credentials.id).run();
         
         return c.json({ 
@@ -368,21 +383,36 @@ emailAuth.post("/email-auth/login", async (c) => {
       "UPDATE email_credentials SET failed_attempts = 0, locked_until = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
     ).bind(credentials.id).run();
 
-    // Generate session token
-    const sessionToken = `email_${credentials.id}_${generateSessionToken()}`;
+    // Find or create user record
+    let loginUser = await c.env.DB.prepare(
+      "SELECT id FROM users WHERE email_credential_id = ?"
+    ).bind(credentials.id).first() as { id: number } | null;
+    if (!loginUser) {
+      const placeholderMochaId = `email_auth_${credentials.id}_${Date.now()}`;
+      await c.env.DB.prepare(
+        "INSERT INTO users (mocha_user_id, email_credential_id, email, profile_status) VALUES (?, ?, ?, ?)"
+      ).bind(placeholderMochaId, credentials.id, normalizedEmail, "incomplete").run();
+      loginUser = await c.env.DB.prepare(
+        "SELECT id FROM users WHERE email_credential_id = ?"
+      ).bind(credentials.id).first() as { id: number } | null;
+    }
 
-    // Set session cookie
-    setCookie(c, MOCHA_SESSION_TOKEN_COOKIE_NAME, sessionToken, {
+    const sessionToken = signSession(
+      { userId: loginUser!.id, email: normalizedEmail, type: "email", emailCredentialId: credentials.id as number },
+      c.env.JWT_SECRET
+    );
+
+    setCookie(c, SESSION_COOKIE, sessionToken, {
       httpOnly: true,
       path: "/",
       sameSite: "none",
       secure: true,
-      maxAge: 60 * 24 * 60 * 60, // 60 days
+      maxAge: 60 * 24 * 60 * 60,
     });
 
-    return c.json({ 
-      success: true, 
-      emailCredentialId: credentials.id 
+    return c.json({
+      success: true,
+      emailCredentialId: credentials.id
     });
   } catch (error) {
     console.error("[EmailAuth] Login error:", error);
@@ -592,20 +622,35 @@ emailAuth.post("/email-auth/reset-password", async (c) => {
       return c.json({ error: "Erro ao recuperar conta" }, 500);
     }
 
-    // Generate session token and log user in
-    const sessionToken = `email_${credentials.id}_${generateSessionToken()}`;
+    // Find or create user record
+    let resetUser = await c.env.DB.prepare(
+      "SELECT id FROM users WHERE email_credential_id = ?"
+    ).bind(credentials.id).first() as { id: number } | null;
+    if (!resetUser) {
+      const placeholderMochaId = `email_auth_${credentials.id}_${Date.now()}`;
+      await c.env.DB.prepare(
+        "INSERT INTO users (mocha_user_id, email_credential_id, email, profile_status) VALUES (?, ?, ?, ?)"
+      ).bind(placeholderMochaId, credentials.id, normalizedEmail, "incomplete").run();
+      resetUser = await c.env.DB.prepare(
+        "SELECT id FROM users WHERE email_credential_id = ?"
+      ).bind(credentials.id).first() as { id: number } | null;
+    }
 
-    // Set session cookie
-    setCookie(c, MOCHA_SESSION_TOKEN_COOKIE_NAME, sessionToken, {
+    const sessionToken = signSession(
+      { userId: resetUser!.id, email: normalizedEmail, type: "email", emailCredentialId: credentials.id as number },
+      c.env.JWT_SECRET
+    );
+
+    setCookie(c, SESSION_COOKIE, sessionToken, {
       httpOnly: true,
       path: "/",
       sameSite: "none",
       secure: true,
-      maxAge: 60 * 24 * 60 * 60, // 60 days
+      maxAge: 60 * 24 * 60 * 60,
     });
 
-    return c.json({ 
-      success: true, 
+    return c.json({
+      success: true,
       message: "Senha alterada com sucesso!",
       emailCredentialId: credentials.id
     });

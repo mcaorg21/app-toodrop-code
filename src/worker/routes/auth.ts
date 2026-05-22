@@ -1,53 +1,89 @@
 import { Hono } from "hono";
-import {
-  exchangeCodeForSessionToken,
-  getOAuthRedirectUrl,
-  deleteSession,
-  MOCHA_SESSION_TOKEN_COOKIE_NAME,
-} from "@getmocha/users-service/backend";
-import { getCookie, setCookie } from "hono/cookie";
-import { unifiedAuthMiddleware } from "../middleware/auth";
+import { setCookie, deleteCookie } from "hono/cookie";
+import { OAuth2Client } from "google-auth-library";
+import { unifiedAuthMiddleware, signSession, SESSION_COOKIE } from "../middleware/auth";
 
 const auth = new Hono<{ Bindings: Env }>();
 
-// Get OAuth redirect URL
-auth.get("/oauth/google/redirect_url", async (c) => {
-  const redirectUrl = await getOAuthRedirectUrl("google", {
-    apiUrl: c.env.MOCHA_USERS_SERVICE_API_URL,
-    apiKey: c.env.MOCHA_USERS_SERVICE_API_KEY,
-  });
+function getOAuthClient(env: Env) {
+  return new OAuth2Client(
+    env.GOOGLE_CLIENT_ID,
+    env.GOOGLE_CLIENT_SECRET,
+    env.GOOGLE_REDIRECT_URI
+  );
+}
 
+// Get Google OAuth redirect URL
+auth.get("/oauth/google/redirect_url", async (c) => {
+  const client = getOAuthClient(c.env);
+  const redirectUrl = client.generateAuthUrl({
+    access_type: "offline",
+    scope: ["profile", "email"],
+    prompt: "consent",
+  });
   return c.json({ redirectUrl }, 200);
 });
 
-// Create session from OAuth code
+// Exchange Google OAuth code for session
 auth.post("/sessions", async (c) => {
   try {
-    console.log("[Sessions] POST /api/sessions called");
-    console.log("[Sessions] Request URL:", c.req.url);
-    
     const body = await c.req.json();
-    console.log("[Sessions] Request body received, has code:", !!body.code);
-
     if (!body.code) {
-      console.log("[Sessions] ERROR: No authorization code provided");
       return c.json({ error: "No authorization code provided" }, 400);
     }
 
-    console.log("[Sessions] Calling exchangeCodeForSessionToken...");
-    const sessionToken = await exchangeCodeForSessionToken(body.code, {
-      apiUrl: c.env.MOCHA_USERS_SERVICE_API_URL,
-      apiKey: c.env.MOCHA_USERS_SERVICE_API_KEY,
+    const client = getOAuthClient(c.env);
+    const { tokens } = await client.getToken(body.code);
+    client.setCredentials(tokens);
+
+    // Get user info from Google
+    const ticket = await client.verifyIdToken({
+      idToken: tokens.id_token!,
+      audience: c.env.GOOGLE_CLIENT_ID,
     });
-    console.log("[Sessions] Session token obtained:", !!sessionToken);
-    console.log("[Sessions] Session token type:", typeof sessionToken);
-    
-    if (!sessionToken) {
-      console.error("[Sessions] ERROR: exchangeCodeForSessionToken returned falsy value");
-      return c.json({ error: "Failed to obtain session token" }, 500);
+    const googlePayload = ticket.getPayload();
+    if (!googlePayload || !googlePayload.email) {
+      return c.json({ error: "Failed to get user info from Google" }, 500);
     }
 
-    setCookie(c, MOCHA_SESSION_TOKEN_COOKIE_NAME, sessionToken, {
+    const { sub: googleId, email, name } = googlePayload;
+
+    // Get or create user
+    let user = await c.env.DB.prepare(
+      "SELECT * FROM users WHERE mocha_user_id = ?"
+    ).bind(googleId).first() as Record<string, unknown> | null;
+
+    if (!user) {
+      // Check if user exists by email (might have been created via email auth)
+      user = await c.env.DB.prepare(
+        "SELECT * FROM users WHERE email = ? AND mocha_user_id NOT LIKE 'email_auth_%'"
+      ).bind(email).first() as Record<string, unknown> | null;
+    }
+
+    if (!user) {
+      await c.env.DB.prepare(
+        `INSERT INTO users (mocha_user_id, email, full_name, profile_status) VALUES (?, ?, ?, ?)`
+      ).bind(googleId, email, name || null, "incomplete").run();
+
+      user = await c.env.DB.prepare(
+        "SELECT * FROM users WHERE mocha_user_id = ?"
+      ).bind(googleId).first() as Record<string, unknown> | null;
+    }
+
+    if (!user) {
+      return c.json({ error: "Failed to create user" }, 500);
+    }
+
+    if (user.is_active === 0) {
+      return c.json({ error: "Usuário desativado." }, 403);
+    }
+
+    const sessionToken = signSession(
+      { userId: user.id as number, email: email!, type: "google", googleId },
+      c.env.JWT_SECRET
+    );
+
+    setCookie(c, SESSION_COOKIE, sessionToken, {
       httpOnly: true,
       path: "/",
       sameSite: "none",
@@ -55,60 +91,26 @@ auth.post("/sessions", async (c) => {
       maxAge: 60 * 24 * 60 * 60,
     });
 
-    console.log("[Sessions] Session created successfully");
     return c.json({ success: true }, 200);
   } catch (error) {
-    console.error("[Sessions] Error creating session:", error);
-    console.error("[Sessions] Error details:", JSON.stringify(error, null, 2));
-    return c.json({ 
-      error: "Erro ao criar sessão", 
-      details: error instanceof Error ? error.message : String(error) 
+    console.error("[Sessions] Error:", error);
+    return c.json({
+      error: "Erro ao criar sessão",
+      details: error instanceof Error ? error.message : String(error),
     }, 500);
   }
 });
 
 // Get current user
 auth.get("/users/me", unifiedAuthMiddleware, async (c) => {
-  const user = c.get("user") as any;
-  
-  if (!user) {
-    return c.json(null);
-  }
-  
-  // For email auth users, return a user object similar to Mocha user format
-  if (user.isEmailAuth) {
-    return c.json({
-      id: user.id,
-      email: user.email,
-      isEmailAuth: true,
-    });
-  }
-  
-  // For Google auth users, return the Mocha user
+  const user = (c as any).get("user") as any;
+  if (!user) return c.json(null);
   return c.json(user);
 });
 
 // Logout
 auth.get("/logout", async (c) => {
-  const sessionToken = getCookie(c, MOCHA_SESSION_TOKEN_COOKIE_NAME);
-
-  // Only call Mocha deleteSession for Google auth sessions
-  if (typeof sessionToken === "string" && !sessionToken.startsWith("email_")) {
-    await deleteSession(sessionToken, {
-      apiUrl: c.env.MOCHA_USERS_SERVICE_API_URL,
-      apiKey: c.env.MOCHA_USERS_SERVICE_API_KEY,
-    });
-  }
-
-  // Clear cookie for both auth types
-  setCookie(c, MOCHA_SESSION_TOKEN_COOKIE_NAME, "", {
-    httpOnly: true,
-    path: "/",
-    sameSite: "none",
-    secure: true,
-    maxAge: 0,
-  });
-
+  deleteCookie(c, SESSION_COOKIE, { path: "/" });
   return c.json({ success: true }, 200);
 });
 

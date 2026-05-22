@@ -204,12 +204,4 @@ app.post("/api/hub/location", async (ctx) => {
   }
 });
 
-// Export both HTTP handler and scheduled handler
-export default {
-  fetch: app.fetch,
-  
-  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
-    console.log("[Cron] Scheduled event triggered");
-    ctx.waitUntil(deactivateInactiveHubs(env));
-  },
-};
+export default app;

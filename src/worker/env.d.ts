@@ -1,11 +1,12 @@
+import type { DB } from "../server/db";
+import type { StorageService } from "../server/storage";
+
 interface EmailParams {
   to: string;
   subject: string;
   html_body?: string;
   text_body?: string;
   reply_to?: string;
-  customer_id?: string;
-  broadcast?: boolean;
 }
 
 interface EmailResult {
@@ -19,10 +20,14 @@ interface EmailService {
 }
 
 interface Env {
-  DB: D1Database;
-  R2_BUCKET: R2Bucket;
-  EMAILS?: EmailService;
-  MOCHA_USERS_SERVICE_API_URL: string;
-  MOCHA_USERS_SERVICE_API_KEY: string;
+  DB: DB;
+  R2_BUCKET: StorageService;
+  EMAILS: EmailService;
+  GOOGLE_CLIENT_ID: string;
+  GOOGLE_CLIENT_SECRET: string;
+  GOOGLE_REDIRECT_URI: string;
+  JWT_SECRET: string;
   GOOGLE_CLOUD_VISION_API_KEY: string;
+  ASAAS_API_KEY_PRODUCAO: string;
+  ADMIN_KEY: string;
 }
