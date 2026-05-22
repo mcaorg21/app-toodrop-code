@@ -1,0 +1,319 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #fafafa;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Custom scrollbar styling for modals and general use */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Enhanced scrollbar for modal content areas */
+.modal-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.modal-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+  margin: 8px 0;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%);
+  border-radius: 10px;
+  border: 2px solid #f1f5f9;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes loadingBar {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-loading-bar {
+  animation: loadingBar 2.5s ease-in-out infinite;
+}
+
+/* Smooth transition overlay */
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+@keyframes overlayFadeOut {
+  from {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+  to {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+}
+
+.transition-overlay-enter {
+  animation: overlayFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.transition-overlay-exit {
+  animation: overlayFadeOut 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Logo pulse animation */
+@keyframes logoPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+.logo-pulse {
+  animation: logoPulse 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Tab content slide animations */
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.slide-in-right {
+  animation: slideInFromRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-in-left {
+  animation: slideInFromLeft 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Collapsible section animations */
+@keyframes sectionExpand {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 2000px;
+  }
+}
+
+@keyframes sectionExpandFast {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section-expand {
+  animation: sectionExpandFast 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  overflow: hidden;
+}
+
+.section-content {
+  animation: sectionExpandFast 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Chevron rotation for collapsible sections */
+.chevron-rotate {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Subtle pulse animation for incoming delivery notifications */
+@keyframes pulseSubtle {
+  0%, 100% {
+    box-shadow: 0 4px 20px rgba(var(--primary) / 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 30px rgba(var(--primary) / 0.5);
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulseSubtle 2s ease-in-out infinite;
+}
+
+/* Login form scale + fade transitions */
+@keyframes scaleAndFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.scale-fade-in {
+  animation: scaleAndFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animated background gradients for login page */
+@keyframes gradientShift {
+  0%, 100% {
+    transform: translate(0%, 0%) rotate(0deg);
+    opacity: 0.8;
+  }
+  33% {
+    transform: translate(20%, 10%) rotate(120deg);
+    opacity: 1;
+  }
+  66% {
+    transform: translate(-10%, 20%) rotate(240deg);
+    opacity: 0.9;
+  }
+}
+
+@keyframes gradientShift2 {
+  0%, 100% {
+    transform: translate(0%, 0%) rotate(0deg) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(-15%, -15%) rotate(180deg) scale(1.1);
+    opacity: 0.9;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+  }
+}
+
+.gradient-blob-1 {
+  animation: gradientShift 20s ease-in-out infinite;
+}
+
+.gradient-blob-2 {
+  animation: gradientShift2 25s ease-in-out infinite;
+}
+
+.float-element {
+  animation: float 15s ease-in-out infinite;
+}
+
+/* Background image zoom and pan animation */
+@keyframes backgroundMove {
+  0%, 100% {
+    transform: scale(1) translate(0, 0);
+  }
+  50% {
+    transform: scale(1.1) translate(-2%, -2%);
+  }
+}
+
+.animate-background {
+  animation: backgroundMove 30s ease-in-out infinite;
+}
+
+/* Leaflet custom marker styles */
+.custom-marker {
+  background: transparent;
+  border: none;
+}
