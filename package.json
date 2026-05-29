@@ -56,7 +56,7 @@
   "scripts": {
     "build:client": "vite build",
     "build": "npm run build:client",
-    "start": "node --import tsx/esm src/server/index.ts",
+    "start": "cross-env TSX_TSCONFIG_PATH=tsconfig.server.json node --import tsx/esm src/server/index.ts",
     "dev:server": "cross-env TSX_TSCONFIG_PATH=tsconfig.server.json node --import tsx/esm src/server/index.ts",
     "dev": "vite",
     "lint": "eslint ."
