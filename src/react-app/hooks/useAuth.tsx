@@ -51,6 +51,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || "Authentication failed");
     }
+
+    // Cookie was just set — fetch user so AuthProvider state is ready before navigate
+    const userRes = await fetch("/api/users/me", { credentials: "include" });
+    const userData = userRes.ok ? await userRes.json() : null;
+    setUser(userData);
   }
 
   async function logout() {
