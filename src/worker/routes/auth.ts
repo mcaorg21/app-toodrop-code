@@ -91,7 +91,10 @@ auth.post("/sessions", async (c) => {
       maxAge: 60 * 24 * 60 * 60,
     });
 
-    return c.json({ success: true }, 200);
+    return c.json({
+      success: true,
+      user: { id: googleId, email: email!, isEmailAuth: false },
+    }, 200);
   } catch (error) {
     console.error("[Sessions] Error:", error);
     return c.json({

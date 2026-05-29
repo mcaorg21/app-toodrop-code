@@ -17,11 +17,26 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const AUTH_CACHE_KEY = "toodrop_auth_user";
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isPending, setIsPending] = useState(true);
 
   useEffect(() => {
+    // Use cached user set during OAuth callback to avoid cookie-timing race
+    const cached = sessionStorage.getItem(AUTH_CACHE_KEY);
+    if (cached) {
+      try {
+        setUser(JSON.parse(cached));
+        setIsPending(false);
+        sessionStorage.removeItem(AUTH_CACHE_KEY);
+        return;
+      } catch {
+        sessionStorage.removeItem(AUTH_CACHE_KEY);
+      }
+    }
+
     fetch("/api/users/me", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => setUser(data))
@@ -52,7 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(err.error || "Authentication failed");
     }
 
-    // Cookie is now set — AuthCallback will do a full reload, no need to update state here
+    // Cache user so AuthProvider reads it immediately on the next page load
+    const data = await res.json();
+    if (data.user) {
+      sessionStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(data.user));
+    }
   }
 
   async function logout() {
