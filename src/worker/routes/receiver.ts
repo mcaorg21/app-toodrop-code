@@ -1260,42 +1260,44 @@ receiver.get("/documents", unifiedAuthMiddleware, async (c) => {
   return c.json(null);
 });
 
-// Get document file from R2
+// Get document file from GCS
 receiver.get("/documents/file/:key", async (c) => {
   const key = c.req.param("key");
   const decodedKey = decodeURIComponent(key);
-  
+
   try {
-    const object = await c.env.R2_BUCKET.get(decodedKey);
-    
-    if (!object) {
+    const data = await c.env.R2_BUCKET.get(decodedKey);
+
+    if (!data) {
       return c.json({ error: "File not found", key: decodedKey }, 404);
     }
-    
-    const headers = new Headers();
-    object.writeHttpMetadata(headers);
-    headers.set("etag", object.httpEtag);
-    headers.set("Cache-Control", "public, max-age=31536000");
-    headers.set("Content-Disposition", "inline");
-    headers.set("Access-Control-Allow-Origin", "*");
-    headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
-    headers.set("Access-Control-Allow-Headers", "*");
-    headers.set("Cross-Origin-Resource-Policy", "cross-origin");
-    headers.set("Cross-Origin-Embedder-Policy", "unsafe-none");
-    headers.delete("X-Frame-Options");
-    headers.set("Content-Security-Policy", "frame-ancestors 'self' https://*.mocha.app");
-    
-    const contentType = object.httpMetadata?.contentType;
-    if (contentType) {
-      headers.set("Content-Type", contentType);
-    }
-    
-    return new Response(object.body, { headers });
+
+    const ext = decodedKey.split(".").pop()?.toLowerCase();
+    const contentTypeMap: Record<string, string> = {
+      pdf: "application/pdf",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      gif: "image/gif",
+      webp: "image/webp",
+    };
+    const contentType = contentTypeMap[ext ?? ""] ?? "application/octet-stream";
+
+    return new Response(data, {
+      headers: {
+        "Content-Type": contentType,
+        "Content-Disposition": "inline",
+        "Cache-Control": "public, max-age=31536000",
+        "Access-Control-Allow-Origin": "*",
+        "Cross-Origin-Resource-Policy": "cross-origin",
+        "Content-Security-Policy": "frame-ancestors 'self' https://*.toodrop.com",
+      },
+    });
   } catch (error) {
-    return c.json({ 
+    return c.json({
       error: "Error fetching file",
       details: error instanceof Error ? error.message : String(error),
-      key: decodedKey
+      key: decodedKey,
     }, 500);
   }
 });
