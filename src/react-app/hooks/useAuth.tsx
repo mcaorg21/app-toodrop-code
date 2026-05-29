@@ -52,10 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(err.error || "Authentication failed");
     }
 
-    // Cookie was just set — fetch user so AuthProvider state is ready before navigate
-    const userRes = await fetch("/api/users/me", { credentials: "include" });
-    const userData = userRes.ok ? await userRes.json() : null;
-    setUser(userData);
+    // Cookie is now set — AuthCallback will do a full reload, no need to update state here
   }
 
   async function logout() {
