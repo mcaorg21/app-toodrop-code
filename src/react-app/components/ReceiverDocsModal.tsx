@@ -791,7 +791,7 @@ export function ReceiverDocsModal({ onClose, onSuccess }: ReceiverDocsModalProps
                         )}
                         <div>
                           <p className="font-semibold text-neutral-900">
-                            {DOC_TYPE_LABELS[validation.doc_type] || validation.doc_type}
+                            {t(DOC_TYPE_LABELS[validation.doc_type]) || validation.doc_type}
                           </p>
                           <p className={`text-sm ${
                             validation.status === "approved" ? "text-green-600" :
