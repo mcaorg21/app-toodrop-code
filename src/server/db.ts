@@ -52,11 +52,5 @@ function prepare(sql: string): D1Statement {
   return stmt;
 }
 
-// Add UNIQUE constraint for upsert support (idempotent)
-pool.query(`
-  ALTER TABLE receiver_doc_validations
-  ADD CONSTRAINT IF NOT EXISTS rdv_user_doc_unique UNIQUE (user_id, doc_type)
-`).catch(() => {/* already exists or no-op */});
-
 export const db = { prepare };
 export type DB = typeof db;

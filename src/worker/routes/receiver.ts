@@ -716,12 +716,9 @@ receiver.post("/documents/upload/id-document", unifiedAuthMiddleware, async (c) 
       ).bind(userId, idDocumentKey, idDocumentBackKey).run();
     }
 
-    // Create pending validation record
-    await c.env.DB.prepare(
-      `INSERT INTO receiver_doc_validations (user_id, doc_type, status, updated_at)
-       VALUES (?, 'id_document', 'pending', CURRENT_TIMESTAMP)
-       ON CONFLICT (user_id, doc_type) DO UPDATE SET status = 'pending', updated_at = CURRENT_TIMESTAMP`
-    ).bind(userId).run();
+    // Create pending validation record (delete+insert to avoid constraint dependency)
+    await c.env.DB.prepare(`DELETE FROM receiver_doc_validations WHERE user_id = ? AND doc_type = 'id_document'`).bind(userId).run();
+    await c.env.DB.prepare(`INSERT INTO receiver_doc_validations (user_id, doc_type, status, updated_at) VALUES (?, 'id_document', 'pending', CURRENT_TIMESTAMP)`).bind(userId).run();
 
     // Capture request URL and headers before background task
     const requestUrl = c.req.url;
@@ -866,11 +863,8 @@ receiver.post("/documents/upload/selfie", unifiedAuthMiddleware, async (c) => {
     ).bind(selfieKey, userId).run();
 
     // Create pending validation record
-    await c.env.DB.prepare(
-      `INSERT INTO receiver_doc_validations (user_id, doc_type, status, updated_at)
-       VALUES (?, 'selfie', 'pending', CURRENT_TIMESTAMP)
-       ON CONFLICT (user_id, doc_type) DO UPDATE SET status = 'pending', updated_at = CURRENT_TIMESTAMP`
-    ).bind(userId).run();
+    await c.env.DB.prepare(`DELETE FROM receiver_doc_validations WHERE user_id = ? AND doc_type = 'selfie'`).bind(userId).run();
+    await c.env.DB.prepare(`INSERT INTO receiver_doc_validations (user_id, doc_type, status, updated_at) VALUES (?, 'selfie', 'pending', CURRENT_TIMESTAMP)`).bind(userId).run();
 
     // Get ID document URL for selfie comparison
     const docs = await c.env.DB.prepare(
@@ -975,11 +969,8 @@ receiver.post("/documents/upload/address-proof", unifiedAuthMiddleware, async (c
     ).bind(userId).run();
 
     // Create pending validation record
-    await c.env.DB.prepare(
-      `INSERT INTO receiver_doc_validations (user_id, doc_type, status, updated_at)
-       VALUES (?, 'address_proof', 'pending', CURRENT_TIMESTAMP)
-       ON CONFLICT (user_id, doc_type) DO UPDATE SET status = 'pending', updated_at = CURRENT_TIMESTAMP`
-    ).bind(userId).run();
+    await c.env.DB.prepare(`DELETE FROM receiver_doc_validations WHERE user_id = ? AND doc_type = 'address_proof'`).bind(userId).run();
+    await c.env.DB.prepare(`INSERT INTO receiver_doc_validations (user_id, doc_type, status, updated_at) VALUES (?, 'address_proof', 'pending', CURRENT_TIMESTAMP)`).bind(userId).run();
 
     // Capture request URL and headers before background task
     const requestUrl = c.req.url;
@@ -1127,11 +1118,8 @@ receiver.post("/documents/upload", unifiedAuthMiddleware, async (c) => {
     // Create pending validation records for each document type
     const docTypes = ["id_document", "selfie", "address_proof"];
     for (const docType of docTypes) {
-      await c.env.DB.prepare(
-        `INSERT INTO receiver_doc_validations (user_id, doc_type, status, updated_at)
-         VALUES (?, ?, 'pending', CURRENT_TIMESTAMP)
-         ON CONFLICT (user_id, doc_type) DO UPDATE SET status = 'pending', updated_at = CURRENT_TIMESTAMP`
-      ).bind(userId, docType).run();
+      await c.env.DB.prepare(`DELETE FROM receiver_doc_validations WHERE user_id = ? AND doc_type = ?`).bind(userId, docType).run();
+      await c.env.DB.prepare(`INSERT INTO receiver_doc_validations (user_id, doc_type, status, updated_at) VALUES (?, ?, 'pending', CURRENT_TIMESTAMP)`).bind(userId, docType).run();
     }
 
     // Send documents to n8n for async validation - one POST per document
