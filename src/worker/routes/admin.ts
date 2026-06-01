@@ -759,7 +759,7 @@ admin.post("/set-pending/:userId", unifiedAuthMiddleware, async (c) => {
   } else {
     // Create receiver_docs record if it doesn't exist (for hubs approved without documents)
     await c.env.DB.prepare(
-      "INSERT INTO receiver_docs (user_id, status, review_notes, created_at, updated_at) VALUES (?, 'pending', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+      "INSERT INTO receiver_docs (user_id, id_document_url, selfie_url, address_proof_url, status, review_notes, created_at, updated_at) VALUES (?, '', '', '', 'pending', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
     ).bind(userId, notes || "Requer nova análise").run();
   }
 
