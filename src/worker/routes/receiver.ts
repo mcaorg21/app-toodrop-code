@@ -812,7 +812,7 @@ receiver.post("/documents/upload/id-document", unifiedAuthMiddleware, async (c) 
     })();
     
     // Use waitUntil to keep the worker alive for the background task
-    c.executionCtx.waitUntil(backgroundTask);
+    backgroundTask.catch((e) => console.error("[Background] Unhandled error:", e));
 
     return c.json({ success: true, id_document_key: idDocumentKey, id_document_back_key: idDocumentBackKey });
   } catch (error) {
@@ -916,7 +916,7 @@ receiver.post("/documents/upload/selfie", unifiedAuthMiddleware, async (c) => {
       }
     })();
     
-    c.executionCtx.waitUntil(backgroundTask);
+    backgroundTask.catch((e) => console.error("[Background] Unhandled error:", e));
 
     return c.json({ success: true, selfie_key: selfieKey });
   } catch (error) {
@@ -1024,7 +1024,7 @@ receiver.post("/documents/upload/address-proof", unifiedAuthMiddleware, async (c
     })();
     
     // Use waitUntil to keep the worker alive for the background task
-    c.executionCtx.waitUntil(backgroundTask);
+    backgroundTask.catch((e) => console.error("[Background] Unhandled error:", e));
 
     return c.json({ success: true, address_proof_key: addressProofKey });
   } catch (error) {
