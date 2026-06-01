@@ -264,11 +264,12 @@ export const receiverPointPendingEmail = (fullName: string, hubNickname: string,
 };
 
 // Pending hub registration reminder email
-export const pendingHubReminderEmail = (firstName: string) => {
+export const pendingHubReminderEmail = (firstName: string, hubNickname?: string) => {
   const properFirstName = toProperCase(firstName);
+  const pointLabel = hubNickname ? `<strong>${hubNickname}</strong>` : "seu ponto de recebimento";
 
   const subject = "Finalize seu cadastro na Toodrop!";
-  
+
   const html_body = emailTemplate(`
     ${emailHeader("Finalize seu cadastro de Toodroper")}
     ${emailBody(`
@@ -276,7 +277,7 @@ export const pendingHubReminderEmail = (firstName: string) => {
         Olá <strong>${properFirstName}</strong>,
       </p>
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 24px; color: #3f3f46;">
-        Notamos que seu cadastro como <strong>Toodroper</strong> ainda não foi finalizado. Para começar a receber encomendas e ganhar suas comissões, você precisa completar o envio dos documentos.
+        Notamos que ${pointLabel} ainda não foi aprovado. Para começar a receber encomendas e ganhar suas comissões, você precisa completar o envio dos documentos.
       </p>
       <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 24px; color: #3f3f46;">
         <strong>O que falta?</strong>
@@ -297,7 +298,8 @@ export const pendingHubReminderEmail = (firstName: string) => {
     ${emailFooter("© 2025 Toodrop. Todos os direitos reservados.")}
   `);
 
-  const text_body = `Olá ${properFirstName}!\n\nNotamos que seu cadastro como Toodroper ainda não foi finalizado. Para começar a receber encomendas e ganhar suas comissões, você precisa completar o envio dos documentos.\n\nO que falta:\n- Documento de identidade (frente e verso)\n- Selfie segurando o documento\n- Comprovante de endereço\n\nAcesse agora e finalize: https://app.toodrop.com/\n\nQuanto antes você finalizar, mais rápido poderá começar a ganhar!`;
+  const pointLabelText = hubNickname || "seu ponto de recebimento";
+  const text_body = `Olá ${properFirstName}!\n\nNotamos que ${pointLabelText} ainda não foi aprovado. Para começar a receber encomendas e ganhar suas comissões, você precisa completar o envio dos documentos.\n\nO que falta:\n- Documento de identidade (frente e verso)\n- Selfie segurando o documento\n- Comprovante de endereço\n\nAcesse agora e finalize: https://app.toodrop.com/\n\nQuanto antes você finalizar, mais rápido poderá começar a ganhar!`;
 
   return { subject, html_body, text_body };
 };

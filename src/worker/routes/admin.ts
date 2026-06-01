@@ -2171,7 +2171,8 @@ admin.post("/send-pending-reminders", adminMiddleware, async (c) => {
         u.id,
         u.full_name,
         u.email,
-        ec.email as credential_email
+        ec.email as credential_email,
+        a.nickname as hub_nickname
       FROM users u
       LEFT JOIN email_credentials ec ON u.email_credential_id = ec.id
       INNER JOIN addresses a ON u.id = a.user_id AND a.address_type = 'receiver'
@@ -2193,8 +2194,9 @@ admin.post("/send-pending-reminders", adminMiddleware, async (c) => {
 
       // Extract first name
       const firstName = (user.full_name as string).split(' ')[0];
+      const hubNickname = (user.hub_nickname as string) || "";
 
-      const emailData = pendingHubReminderEmail(firstName);
+      const emailData = pendingHubReminderEmail(firstName, hubNickname);
 
       try {
         if (!c.env.EMAILS) {
