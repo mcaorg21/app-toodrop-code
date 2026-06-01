@@ -687,9 +687,7 @@ receiver.post("/documents/upload/id-document", unifiedAuthMiddleware, async (c) 
     const idDocumentBuffer = await idDocumentFile.arrayBuffer();
     const contentType1 = idDocumentFile.type || (idDocumentFile.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
 
-    await c.env.R2_BUCKET.put(idDocumentKey, idDocumentBuffer, {
-      httpMetadata: { contentType: contentType1 },
-    });
+    await c.env.R2_BUCKET.put(idDocumentKey, Buffer.from(idDocumentBuffer), contentType1);
 
     let idDocumentBackKey: string | null = null;
     let idDocumentBackBuffer: ArrayBuffer | null = null;
@@ -698,10 +696,8 @@ receiver.post("/documents/upload/id-document", unifiedAuthMiddleware, async (c) 
       idDocumentBackKey = `receiver-docs/${userId}/id-document-back-${timestamp}.${idDocumentBackFile.name.split('.').pop()}`;
       idDocumentBackBuffer = await idDocumentBackFile.arrayBuffer();
       contentType2 = idDocumentBackFile.type || (idDocumentBackFile.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
-      
-      await c.env.R2_BUCKET.put(idDocumentBackKey, idDocumentBackBuffer, {
-        httpMetadata: { contentType: contentType2 },
-      });
+
+      await c.env.R2_BUCKET.put(idDocumentBackKey, Buffer.from(idDocumentBackBuffer), contentType2);
     }
 
     // Update or create receiver_docs record
@@ -861,9 +857,7 @@ receiver.post("/documents/upload/selfie", unifiedAuthMiddleware, async (c) => {
     // Convert to base64 for n8n
     let selfieBase64 = Buffer.from(selfieBuffer).toString('base64');
 
-    await c.env.R2_BUCKET.put(selfieKey, selfieBuffer, {
-      httpMetadata: { contentType },
-    });
+    await c.env.R2_BUCKET.put(selfieKey, Buffer.from(selfieBuffer), contentType);
 
     // Update receiver_docs record
     await c.env.DB.prepare(
@@ -967,9 +961,7 @@ receiver.post("/documents/upload/address-proof", unifiedAuthMiddleware, async (c
     const addressProofBuffer = await addressProofFile.arrayBuffer();
     const contentType = addressProofFile.type || (addressProofFile.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
 
-    await c.env.R2_BUCKET.put(addressProofKey, addressProofBuffer, {
-      httpMetadata: { contentType },
-    });
+    await c.env.R2_BUCKET.put(addressProofKey, Buffer.from(addressProofBuffer), contentType);
 
     // Update receiver_docs record and set user as pending
     await c.env.DB.prepare(
@@ -1098,35 +1090,17 @@ receiver.post("/documents/upload", unifiedAuthMiddleware, async (c) => {
     const contentType2 = selfieFile.type || 'image/jpeg';
     const contentType3 = addressProofFile.type || (addressProofFile.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
 
-    await c.env.R2_BUCKET.put(idDocumentKey, idDocumentBuffer, {
-      httpMetadata: {
-        contentType: contentType1,
-      },
-    });
-
-    await c.env.R2_BUCKET.put(selfieKey, selfieBuffer, {
-      httpMetadata: {
-        contentType: contentType2,
-      },
-    });
-
-    await c.env.R2_BUCKET.put(addressProofKey, addressProofBuffer, {
-      httpMetadata: {
-        contentType: contentType3,
-      },
-    });
+    await c.env.R2_BUCKET.put(idDocumentKey, Buffer.from(idDocumentBuffer), contentType1);
+    await c.env.R2_BUCKET.put(selfieKey, Buffer.from(selfieBuffer), contentType2);
+    await c.env.R2_BUCKET.put(addressProofKey, Buffer.from(addressProofBuffer), contentType3);
 
     let idDocumentBackKey: string | null = null;
     if (idDocumentBackFile) {
       idDocumentBackKey = `receiver-docs/${userId}/id-document-back-${timestamp}.${idDocumentBackFile.name.split('.').pop()}`;
       const idDocumentBackBuffer = await idDocumentBackFile.arrayBuffer();
       const contentType4 = idDocumentBackFile.type || (idDocumentBackFile.name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
-      
-      await c.env.R2_BUCKET.put(idDocumentBackKey, idDocumentBackBuffer, {
-        httpMetadata: {
-          contentType: contentType4,
-        },
-      });
+
+      await c.env.R2_BUCKET.put(idDocumentBackKey, Buffer.from(idDocumentBackBuffer), contentType4);
     }
 
     await c.env.DB.prepare(
