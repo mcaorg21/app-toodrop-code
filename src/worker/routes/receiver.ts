@@ -718,8 +718,9 @@ receiver.post("/documents/upload/id-document", unifiedAuthMiddleware, async (c) 
 
     // Create pending validation record
     await c.env.DB.prepare(
-      `INSERT OR REPLACE INTO receiver_doc_validations (user_id, doc_type, status, updated_at)
-       VALUES (?, 'id_document', 'pending', CURRENT_TIMESTAMP)`
+      `INSERT INTO receiver_doc_validations (user_id, doc_type, status, updated_at)
+       VALUES (?, 'id_document', 'pending', CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, doc_type) DO UPDATE SET status = 'pending', updated_at = CURRENT_TIMESTAMP`
     ).bind(userId).run();
 
     // Capture request URL and headers before background task
@@ -866,8 +867,9 @@ receiver.post("/documents/upload/selfie", unifiedAuthMiddleware, async (c) => {
 
     // Create pending validation record
     await c.env.DB.prepare(
-      `INSERT OR REPLACE INTO receiver_doc_validations (user_id, doc_type, status, updated_at)
-       VALUES (?, 'selfie', 'pending', CURRENT_TIMESTAMP)`
+      `INSERT INTO receiver_doc_validations (user_id, doc_type, status, updated_at)
+       VALUES (?, 'selfie', 'pending', CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, doc_type) DO UPDATE SET status = 'pending', updated_at = CURRENT_TIMESTAMP`
     ).bind(userId).run();
 
     // Get ID document URL for selfie comparison
@@ -974,8 +976,9 @@ receiver.post("/documents/upload/address-proof", unifiedAuthMiddleware, async (c
 
     // Create pending validation record
     await c.env.DB.prepare(
-      `INSERT OR REPLACE INTO receiver_doc_validations (user_id, doc_type, status, updated_at)
-       VALUES (?, 'address_proof', 'pending', CURRENT_TIMESTAMP)`
+      `INSERT INTO receiver_doc_validations (user_id, doc_type, status, updated_at)
+       VALUES (?, 'address_proof', 'pending', CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id, doc_type) DO UPDATE SET status = 'pending', updated_at = CURRENT_TIMESTAMP`
     ).bind(userId).run();
 
     // Capture request URL and headers before background task
@@ -1104,9 +1107,17 @@ receiver.post("/documents/upload", unifiedAuthMiddleware, async (c) => {
     }
 
     await c.env.DB.prepare(
-      `INSERT OR REPLACE INTO receiver_docs 
-       (user_id, id_document_url, id_document_back_url, selfie_url, address_proof_url, address_proof_type, status) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO receiver_docs
+       (user_id, id_document_url, id_document_back_url, selfie_url, address_proof_url, address_proof_type, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (user_id) DO UPDATE SET
+         id_document_url = EXCLUDED.id_document_url,
+         id_document_back_url = EXCLUDED.id_document_back_url,
+         selfie_url = EXCLUDED.selfie_url,
+         address_proof_url = EXCLUDED.address_proof_url,
+         address_proof_type = EXCLUDED.address_proof_type,
+         status = 'pending',
+         updated_at = CURRENT_TIMESTAMP`
     ).bind(userId, idDocumentKey, idDocumentBackKey, selfieKey, addressProofKey, addressProofType, "pending").run();
 
     await c.env.DB.prepare(
@@ -1117,8 +1128,9 @@ receiver.post("/documents/upload", unifiedAuthMiddleware, async (c) => {
     const docTypes = ["id_document", "selfie", "address_proof"];
     for (const docType of docTypes) {
       await c.env.DB.prepare(
-        `INSERT OR REPLACE INTO receiver_doc_validations (user_id, doc_type, status, updated_at)
-         VALUES (?, ?, 'pending', CURRENT_TIMESTAMP)`
+        `INSERT INTO receiver_doc_validations (user_id, doc_type, status, updated_at)
+         VALUES (?, ?, 'pending', CURRENT_TIMESTAMP)
+         ON CONFLICT (user_id, doc_type) DO UPDATE SET status = 'pending', updated_at = CURRENT_TIMESTAMP`
       ).bind(userId, docType).run();
     }
 
