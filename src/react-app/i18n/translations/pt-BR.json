@@ -50,7 +50,9 @@
     "noResults": "Nenhum resultado encontrado",
     "stepOf": "Etapa {{current}} de {{total}}",
     "current": "Atual",
-    "notProvided": "Não informado"
+    "notProvided": "Não informado",
+    "hide": "Ocultar",
+    "show": "Mostrar"
   },
   "address": {
     "addAddress": "Adicionar Endereço",
@@ -139,6 +141,9 @@
   "droptagCard": {
     "edit": "Editar",
     "delete": "Excluir",
+    "deleteDropTag": "Excluir DropTag",
+    "pickupPackage": "Retirar Encomenda",
+    "chosenPoints": "Pontos Escolhidos",
     "secretWord": "Palavra secreta",
     "notes": "Observações",
     "pickup": {
@@ -155,18 +160,41 @@
       "cancelWithdrawal": "Cancelar Retirada",
       "scanQrCode": "Escanear QR Code do Recebedor (TooDroper)"
     },
+    "pickupModal": {
+      "neighborTooDropper": "TooDroper Vizinho",
+      "neighbor": "Vizinho"
+    },
+    "declaration": {
+      "priorAgreement": "Acordo Prévio",
+      "priorAgreementText": "Estou ciente de que combinei previamente a retirada com o recebedor.",
+      "paymentForPickup": "Pagamento na Retirada",
+      "paymentForPickupText": "Confirmo que pagarei o valor do serviço ao recebedor no momento da retirada.",
+      "automaticSplit": "Divisão Automática",
+      "automaticSplitText": "O valor será dividido automaticamente entre o recebedor e o entregador pela plataforma."
+    },
     "payment": {
       "title": "Pagamento",
       "payWith": "Pagar com",
       "creditCard": "Cartão de Crédito",
       "pix": "PIX",
+      "pixCopyPaste": "PIX Copia e Cola",
       "savedCards": "Cartões salvos",
       "useNewCard": "Usar novo cartão",
+      "serviceValue": "Valor do Serviço",
+      "generatingPix": "Gerando PIX...",
+      "errorGenerating": "Erro ao gerar PIX",
+      "paymentCompleted": "Pagamento Realizado!",
+      "processFinished": "O processo foi finalizado com sucesso.",
+      "canPickup": "Agora você pode retirar sua encomenda com {{name}}.",
+      "pixCodeNotAvailable": "Código PIX não disponível",
+      "cardLimitReached": "Limite de cartões atingido",
       "cardNumber": "Número do cartão",
       "enterCardNumber": "Digite o número do cartão",
+      "enterCardDigits": "Digite os dígitos do cartão",
       "invalidCard": "Número de cartão inválido",
       "expiry": "Validade",
       "invalidExpiry": "Data inválida",
+      "invalidMonth": "Mês inválido",
       "cvv": "CVV",
       "threeDigits": "3 dígitos",
       "nameOnCard": "Nome no cartão",
@@ -595,7 +623,16 @@
       "noPackagesFound": "Sem pacotes encontrados",
       "noPackagesFoundDesc": "Nenhum cliente foi encontrado a partir dos dados fornecidos pela foto que você tirou da etiqueta.",
       "error": "Erro",
-      "errorProcessingPhoto": "Erro ao processar a foto"
+      "errorProcessingPhoto": "Erro ao processar a foto",
+      "nearbyDeliveries": "Entregas próximas",
+      "retryAttempt": "Tentativa {{current}} de {{max}}",
+      "messages": {
+        "sending": "Enviando etiqueta para leitura",
+        "reading": "Lendo etiqueta",
+        "wait": "Aguarde mais um pouco",
+        "verifying": "Verificando endereço da etiqueta",
+        "crossChecking": "Realizando cruzamento de dados"
+      }
     },
     "receiverSelection": {
       "qrCodeTitle": "QR Code para Entrega",
@@ -943,7 +980,9 @@
       "complete": "Concluir"
     },
     "buttons": {
-      "sending": "Enviando..."
+      "sending": "Enviando...",
+      "useCamera": "Usar Câmera",
+      "chooseFile": "Escolher Arquivo"
     },
     "errors": {
       "document": "Erro ao enviar documento",
