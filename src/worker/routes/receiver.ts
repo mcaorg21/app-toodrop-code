@@ -30,8 +30,8 @@ const N8N_OCR_WEBHOOK_URL = "https://primary-production-1a8e5.up.railway.app/web
 // N8N Webhook URL for address proof validation
 const ADDRESS_PROOF_WEBHOOK_URL = "https://primary-production-1a8e5.up.railway.app/webhook/f32c6bd2-cea0-42f3-9575-e26e558be7a94";
 
-// Production URL for callback URLs (always use prod so n8n can reach it)
-const PRODUCTION_BASE_URL = "https://tdv4.mocha.app";
+// Production URL for n8n callbacks — must be publicly reachable
+const PRODUCTION_BASE_URL = process.env.APP_BASE_URL || "https://app.toodrop.com";
 
 // Helper function to perform OCR using Google Cloud Vision
 async function performOCR(
@@ -200,34 +200,29 @@ async function resizeDocumentImage(imageBase64: string): Promise<{ success: bool
 
 // Helper function to get the correct base URL for callbacks
 function getCallbackBaseUrl(requestUrl: string, hostHeader?: string | null, forwardedHost?: string | null): string {
-  // Log for debugging
   console.log('[getCallbackBaseUrl] hostHeader:', hostHeader, 'forwardedHost:', forwardedHost, 'requestUrl:', requestUrl);
-  
-  // First, check X-Forwarded-Host (used by proxies)
-  if (forwardedHost) {
-    if (forwardedHost.includes('mocha.app') || forwardedHost.includes('mocha.run')) {
-      return `https://${forwardedHost}`;
-    }
+
+  const isPublicHost = (host: string) =>
+    !host.startsWith('localhost') && !host.startsWith('127.') && !host.startsWith('[::');
+
+  // Prefer X-Forwarded-Host (set by Railway proxy)
+  if (forwardedHost && isPublicHost(forwardedHost)) {
+    return `https://${forwardedHost}`;
   }
-  
-  // Then check the Host header
-  // Accept mocha.app (production) or mocha.run (dev preview)
-  if (hostHeader) {
-    if (hostHeader.includes('mocha.app') || hostHeader.includes('mocha.run')) {
-      return `https://${hostHeader}`;
-    }
+
+  // Then check Host header
+  if (hostHeader && isPublicHost(hostHeader)) {
+    return `https://${hostHeader}`;
   }
-  
+
   try {
     const url = new URL(requestUrl);
-    // If it's a mocha.app or mocha.run URL, use it
-    if (url.hostname.includes('mocha.app') || url.hostname.includes('mocha.run')) {
-      return url.origin;
-    }
+    if (isPublicHost(url.hostname)) return url.origin;
   } catch (e) {
     console.log('[getCallbackBaseUrl] Error parsing URL:', e);
   }
-  // Fallback to production URL for localhost, IPv6, or any other case
+
+  // Localhost / dev — fall back to prod so n8n can reach the webhook
   return PRODUCTION_BASE_URL;
 }
 
