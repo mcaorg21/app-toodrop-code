@@ -738,7 +738,7 @@ admin.post("/set-pending/:userId", unifiedAuthMiddleware, async (c) => {
 
   // Get receiver_key to deactivate the hub
   const address = await c.env.DB.prepare(
-    "SELECT receiver_key FROM addresses WHERE user_id = ? AND address_type = 'receiver'"
+    "SELECT receiver_key, nickname FROM addresses WHERE user_id = ? AND address_type = 'receiver'"
   ).bind(userId).first();
 
   // Set user back to pending status (allow setting approved receivers back to pending)
