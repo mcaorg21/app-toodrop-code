@@ -2167,18 +2167,16 @@ admin.post("/send-pending-reminders", adminMiddleware, async (c) => {
     // 2. is_receiver_pending = 1 AND receiver_docs without address_proof_url (incomplete docs)
     // 3. receiver_docs.status = 'pending' (in_analysis) AND no address_proof_url
     const pendingUsers = await c.env.DB.prepare(`
-      SELECT 
+      SELECT
         u.id,
         u.full_name,
         u.email,
         ec.email as credential_email
       FROM users u
       LEFT JOIN email_credentials ec ON u.email_credential_id = ec.id
-      LEFT JOIN receiver_docs rd ON u.id = rd.user_id
-      WHERE (
-        (u.is_receiver_pending = 1 AND (rd.id IS NULL OR rd.address_proof_url IS NULL))
-        OR (rd.status = 'pending' AND rd.address_proof_url IS NULL)
-      )
+      INNER JOIN addresses a ON u.id = a.user_id AND a.address_type = 'receiver'
+      WHERE u.is_receiver_pending = 1
+        AND u.is_receiver_active = 0
         AND (u.email IS NOT NULL OR ec.email IS NOT NULL)
     `).all();
 
