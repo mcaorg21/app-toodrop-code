@@ -23,7 +23,7 @@ function toPostgres(sql: string): string {
 
 interface D1Statement {
   bind(...params: unknown[]): D1Statement;
-  run(): Promise<{ success: boolean }>;
+  run(): Promise<{ success: boolean; meta: { changes: number } }>;
   first<T = Record<string, unknown>>(): Promise<T | null>;
   all<T = Record<string, unknown>>(): Promise<{ results: T[] }>;
 }
@@ -37,8 +37,8 @@ function prepare(sql: string): D1Statement {
       return stmt;
     },
     async run() {
-      await pool.query(toPostgres(sql), params);
-      return { success: true };
+      const result = await pool.query(toPostgres(sql), params);
+      return { success: true, meta: { changes: result.rowCount ?? 0 } };
     },
     async first<T = Record<string, unknown>>(): Promise<T | null> {
       const result = await pool.query(toPostgres(sql), params);

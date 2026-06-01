@@ -793,17 +793,14 @@ delivery.post("/pending-secret-word", unifiedAuthMiddleware, async (c) => {
   } | null;
 
   if (!attemptsRecord) {
-    // Create new record
-    const result = await c.env.DB.prepare(
+    await c.env.DB.prepare(
       `INSERT INTO secret_word_attempts (droptag_id, driver_user_id, failed_attempts, created_at, updated_at)
        VALUES (?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
     ).bind(droptag_id, user.id).run();
-    
-    attemptsRecord = {
-      id: result.meta.last_row_id as number,
-      failed_attempts: 0,
-      blocked_until: null
-    };
+
+    attemptsRecord = await c.env.DB.prepare(
+      `SELECT id, failed_attempts, blocked_until FROM secret_word_attempts WHERE droptag_id = ? AND driver_user_id = ?`
+    ).bind(droptag_id, user.id).first() as typeof attemptsRecord;
   }
 
   // Check if blocked
