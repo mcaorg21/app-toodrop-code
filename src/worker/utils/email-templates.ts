@@ -341,3 +341,22 @@ export const referralInviteTemplate = ({
     ${emailFooter("© 2025 Toodrop. Todos os direitos reservados.")}
   `);
 };
+
+export const broadcastEmail = (subject: string, message: string) => {
+  const htmlMessage = message.replace(/\n/g, '<br>');
+
+  const html_body = emailTemplate(`
+    ${emailHeader(subject)}
+    ${emailBody(`
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 28px; color: #3f3f46; white-space: pre-line;">
+        ${htmlMessage}
+      </p>
+      ${emailButton("Acessar Plataforma", "https://app.toodrop.com/")}
+    `)}
+    ${emailFooter("© 2025 Toodrop. Todos os direitos reservados.")}
+  `);
+
+  const text_body = message + '\n\nAcesse: https://app.toodrop.com/';
+
+  return { subject, html_body, text_body };
+};

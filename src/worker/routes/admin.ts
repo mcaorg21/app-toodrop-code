@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 // import { unifiedAuthMiddleware } from "@getmocha/users-service/backend";
 import { unifiedAuthMiddleware } from "../middleware/auth";
-import { receiverPointApprovedEmail, receiverPointRejectedEmail, receiverPointPendingEmail, pendingHubReminderEmail } from "../utils/email-templates";
+import { receiverPointApprovedEmail, receiverPointRejectedEmail, receiverPointPendingEmail, pendingHubReminderEmail, broadcastEmail } from "../utils/email-templates";
 // Removed: import { createAsaasSubconta } from "../utils/asaas-helpers";
 
 const admin = new Hono<{ Bindings: Env }>();
@@ -2285,6 +2285,104 @@ admin.post("/test-email", adminMiddleware, async (c) => {
   } catch (error) {
     return c.json({ error: error instanceof Error ? error.message : String(error) }, 500);
   }
+});
+
+// Get communication recipients by group
+admin.get("/communication/recipients", unifiedAuthMiddleware, async (c) => {
+  const userQuery = getUserQuery(c);
+  if (!userQuery) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const adminUser = await c.env.DB.prepare(
+    `SELECT u.id FROM users u INNER JOIN admins a ON u.id = a.user_id WHERE u.${userQuery.field} = ?`
+  ).bind(userQuery.value).first();
+
+  if (!adminUser) {
+    return c.json({ error: "Unauthorized - Admin access required" }, 401);
+  }
+
+  const group = c.req.query("group") as string;
+
+  let sql = `
+    SELECT u.id, u.full_name, u.email, ec.email as credential_email
+    FROM users u
+    LEFT JOIN email_credentials ec ON u.email_credential_id = ec.id
+    WHERE (u.email IS NOT NULL OR ec.email IS NOT NULL)
+      AND u.is_active != 0
+  `;
+
+  const bindings: string[] = [];
+
+  if (group && group !== "all") {
+    sql += ` AND u.main_interest = ?`;
+    bindings.push(group);
+  }
+
+  sql += ` ORDER BY u.full_name ASC`;
+
+  const stmt = bindings.length > 0
+    ? c.env.DB.prepare(sql).bind(...bindings)
+    : c.env.DB.prepare(sql);
+
+  const { results } = await stmt.all();
+
+  const recipients = (results as any[]).map((row) => ({
+    id: row.id,
+    full_name: row.full_name,
+    email: row.email || row.credential_email,
+  }));
+
+  return c.json(recipients);
+});
+
+// Send broadcast email to recipients
+admin.post("/communication/send", unifiedAuthMiddleware, async (c) => {
+  const userQuery = getUserQuery(c);
+  if (!userQuery) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+
+  const adminUser = await c.env.DB.prepare(
+    `SELECT u.id FROM users u INNER JOIN admins a ON u.id = a.user_id WHERE u.${userQuery.field} = ?`
+  ).bind(userQuery.value).first();
+
+  if (!adminUser) {
+    return c.json({ error: "Unauthorized - Admin access required" }, 401);
+  }
+
+  const { subject, message, recipients } = await c.req.json() as {
+    subject: string;
+    message: string;
+    recipients: Array<{ id: number; email: string; full_name: string }>;
+  };
+
+  if (!subject || !message || !recipients || recipients.length === 0) {
+    return c.json({ error: "Campos obrigatórios ausentes" }, 400);
+  }
+
+
+  let sent = 0;
+  let failed = 0;
+  const errors: string[] = [];
+
+  for (const recipient of recipients) {
+    try {
+      const emailContent = broadcastEmail(subject, message);
+      await c.env.EMAILS.send({
+        to: recipient.email,
+        subject: emailContent.subject,
+        html_body: emailContent.html_body,
+        text_body: emailContent.text_body,
+      });
+      sent++;
+    } catch (err) {
+      failed++;
+      errors.push(`${recipient.email}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  return c.json({ sent, failed, errors });
 });
 
 export default admin;
