@@ -2368,7 +2368,12 @@ admin.post("/communication/send", unifiedAuthMiddleware, async (c) => {
 
   for (const recipient of recipients) {
     try {
-      const emailContent = broadcastEmail(subject, message);
+      const firstName = recipient.full_name ? recipient.full_name.trim().split(/\s+/)[0] : "";
+      const fullName = recipient.full_name || "";
+      const personalize = (text: string) =>
+        text.replace(/\{\{nome\}\}/gi, firstName).replace(/\{\{nome_completo\}\}/gi, fullName);
+
+      const emailContent = broadcastEmail(personalize(subject), personalize(message));
       await c.env.EMAILS.send({
         to: recipient.email,
         subject: emailContent.subject,

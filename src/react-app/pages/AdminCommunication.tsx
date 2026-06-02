@@ -156,9 +156,28 @@ export default function AdminCommunicationPage() {
         {loaded && (
           <>
             <div className="border-t border-neutral-100 pt-6">
-              <h2 className="text-base font-semibold text-neutral-800 mb-4">
+              <h2 className="text-base font-semibold text-neutral-800 mb-1">
                 Passo 2 — Escrever mensagem
               </h2>
+              <div className="flex flex-wrap gap-1.5 mb-4 items-center">
+                <span className="text-xs text-neutral-500">Variáveis disponíveis:</span>
+                {[
+                  { label: "Primeiro nome", variable: "{{nome}}" },
+                  { label: "Nome completo", variable: "{{nome_completo}}" },
+                ].map(({ label, variable }) => (
+                  <button
+                    key={variable}
+                    type="button"
+                    onClick={() => setSubject((s) => s + variable)}
+                    title={`Inserir no assunto: ${variable}`}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 text-primary-700 border border-primary-200 rounded-md text-xs font-mono hover:bg-primary-100 transition-colors cursor-pointer"
+                  >
+                    {variable}
+                    <span className="font-sans font-normal text-primary-500 text-[10px]">{label}</span>
+                  </button>
+                ))}
+                <span className="text-xs text-neutral-400">— clique para inserir no assunto ou cole no corpo</span>
+              </div>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
@@ -168,7 +187,7 @@ export default function AdminCommunicationPage() {
                     type="text"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    placeholder="Digite o assunto do email..."
+                    placeholder="Ex: Olá {{nome}}, temos uma novidade para você!"
                     className="w-full border border-neutral-300 rounded-xl px-3 py-2.5 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
@@ -179,7 +198,7 @@ export default function AdminCommunicationPage() {
                   <RichTextEditor
                     value={message}
                     onChange={setMessage}
-                    placeholder="Digite a mensagem que será enviada aos destinatários..."
+                    placeholder="Digite a mensagem. Use {{nome}} para personalizar com o primeiro nome do destinatário..."
                   />
                 </div>
               </div>
