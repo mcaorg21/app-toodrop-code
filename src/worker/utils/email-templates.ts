@@ -344,7 +344,6 @@ export const referralInviteTemplate = ({
 
 export const broadcastEmail = (subject: string, htmlMessage: string) => {
   const html_body = emailTemplate(`
-    ${emailHeader(subject)}
     ${emailBody(`
       <div style="font-size: 16px; line-height: 28px; color: #3f3f46;">
         ${htmlMessage}
