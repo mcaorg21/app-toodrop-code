@@ -401,7 +401,7 @@ export default function DashboardPage() {
 
       {/* WhatsApp floating button */}
       <a
-        href={`https://wa.me/553131575716?text=${encodeURIComponent("Oi, estou com algumas dÃºvidas sobre a Toodrop, pode me ajudar?")}`}
+        href={`https://wa.me/553131575716?text=${encodeURIComponent("Oi, estou com algumas dúvidas sobre a Toodrop, pode me ajudar?")}`}
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-6 right-6 z-[200] bg-[#25D366] hover:bg-[#20bd5a] text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95"
