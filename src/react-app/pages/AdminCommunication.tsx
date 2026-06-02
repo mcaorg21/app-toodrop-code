@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Loader2, Send, Users, CheckSquare, Square, Trash2 } from "lucide-react";
+import { RichTextEditor } from "@/react-app/components/RichTextEditor";
 
 interface Recipient {
   id: number;
@@ -73,7 +74,8 @@ export default function AdminCommunicationPage() {
 
   const handleSend = async () => {
     const selectedRecipients = recipients.filter((r) => r.selected);
-    if (!subject.trim() || !message.trim() || selectedRecipients.length === 0) return;
+    const messageEmpty = !message || message === "<p></p>" || message.trim() === "";
+    if (!subject.trim() || messageEmpty || selectedRecipients.length === 0) return;
 
     setSending(true);
     setResult(null);
@@ -97,7 +99,8 @@ export default function AdminCommunicationPage() {
     }
   };
 
-  const canSend = subject.trim() && message.trim() && selectedCount > 0 && !sending;
+  const messageEmpty = !message || message === "<p></p>" || message.trim() === "";
+  const canSend = subject.trim() && !messageEmpty && selectedCount > 0 && !sending;
 
   return (
     <div className="space-y-6">
@@ -173,12 +176,10 @@ export default function AdminCommunicationPage() {
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
                     Mensagem
                   </label>
-                  <textarea
+                  <RichTextEditor
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    onChange={setMessage}
                     placeholder="Digite a mensagem que será enviada aos destinatários..."
-                    rows={6}
-                    className="w-full border border-neutral-300 rounded-xl px-3 py-2.5 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-y"
                   />
                 </div>
               </div>
