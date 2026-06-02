@@ -15,7 +15,7 @@ interface EmailResult {
 
 export function createEmailService() {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM || "Toodrop <noreply@toodrop.com.br>";
+  const from = process.env.EMAIL_FROM || "Toodrop <contato@toodrop.com>";
   let resend: Resend | null = null;
 
   function getClient(): Resend {
