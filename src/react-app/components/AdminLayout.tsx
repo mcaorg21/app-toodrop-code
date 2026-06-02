@@ -1,6 +1,6 @@
 import { Header } from "@/react-app/components/Header";
 import { Link, useLocation } from "react-router";
-import { TrendingUp, Users, Percent, UserSearch, Package, Wallet, ArrowDownToLine } from "lucide-react";
+import { TrendingUp, Users, Percent, UserSearch, Package, Wallet, ArrowDownToLine, Megaphone } from "lucide-react";
 import type { User } from "@/shared/types";
 
 interface AdminLayoutProps {
@@ -79,6 +79,17 @@ export function AdminLayout({ profile, children }: AdminLayoutProps) {
             >
               <Package className="w-4 h-4" strokeWidth={2} />
               DropTags
+            </Link>
+            <Link
+              to="/admin/communication"
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+                isActive("/admin/communication")
+                  ? "bg-primary-100 text-primary-700"
+                  : "text-neutral-600 hover:bg-neutral-100"
+              }`}
+            >
+              <Megaphone className="w-4 h-4" strokeWidth={2} />
+              Comunicação
             </Link>
             <Link
               to="/admin/asaas-extract"

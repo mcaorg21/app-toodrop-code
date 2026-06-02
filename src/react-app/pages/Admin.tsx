@@ -11,6 +11,7 @@ import AdminAsaasExtractPage from "@/react-app/pages/AdminAsaasExtract";
 import AdminWithdrawalsPage from "@/react-app/pages/AdminWithdrawals";
 import { AdminUsers } from "@/react-app/pages/AdminUsers";
 import { AdminDroptags } from "@/react-app/pages/AdminDroptags";
+import AdminCommunicationPage from "@/react-app/pages/AdminCommunication";
 import { Loader2 } from "lucide-react";
 
 export default function AdminPage() {
@@ -51,6 +52,7 @@ export default function AdminPage() {
         <Route path="/withdrawals" element={<AdminWithdrawalsPage />} />
         <Route path="/users" element={<AdminUsers />} />
         <Route path="/droptags" element={<AdminDroptags />} />
+        <Route path="/communication" element={<AdminCommunicationPage />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     </AdminLayout>
