@@ -11,6 +11,21 @@ interface ReviewReceiverModalProps {
 
 type ReviewAction = "approve" | "reject" | "pending" | null;
 
+const PENDING_PRESETS = [
+  "Favor enviar restante da documentação",
+  "Favor enviar novamente comprovante de residência",
+  "Favor enviar documento de identificação com melhor qualidade",
+  "Favor enviar selfie segurando o documento",
+  "Documento de identificação ilegível, favor reenviar",
+];
+
+const REJECT_PRESETS = [
+  "Documentação incompleta ou inválida",
+  "Endereço não corresponde ao comprovante enviado",
+  "Selfie não confere com o documento de identificação",
+];
+
+
 export function ReviewReceiverModal({
   onClose,
   onApprove,
@@ -125,12 +140,28 @@ export function ReviewReceiverModal({
             <>
               <div className="mb-4">
                 <label className="block text-sm font-semibold text-neutral-700 mb-2">
-                  {action === "approve" 
+                  {action === "approve"
                     ? "Observações (opcional)"
                     : action === "reject"
                     ? "Motivo da reprovação *"
                     : "Motivo da pendência *"}
                 </label>
+
+                {(action === "pending" || action === "reject") && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {(action === "pending" ? PENDING_PRESETS : REJECT_PRESETS).map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setNotes(preset)}
+                        className="text-xs px-2.5 py-1 rounded-lg border border-neutral-300 text-neutral-600 hover:bg-neutral-100 hover:border-neutral-400 transition-colors text-left"
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
