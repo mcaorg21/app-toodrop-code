@@ -12,6 +12,7 @@ interface ReviewReceiverModalProps {
 type ReviewAction = "approve" | "reject" | "pending" | null;
 
 const PENDING_PRESETS = [
+  "Favor enviar documentação completa",
   "Favor enviar restante da documentação",
   "Favor enviar novamente comprovante de residência",
   "Favor enviar documento de identificação com melhor qualidade",
