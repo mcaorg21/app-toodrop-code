@@ -2410,4 +2410,94 @@ admin.post("/communication/send", unifiedAuthMiddleware, async (c) => {
   return c.json({ sent, failed, errors });
 });
 
+// Manually pay referral commission (for fixing historical cases)
+admin.post("/referrals/pay-commission", unifiedAuthMiddleware, async (c) => {
+  const mochaUser = c.get("user");
+  if (!mochaUser) return c.json({ error: "Unauthorized" }, 401);
+
+  const adminUser = await c.env.DB.prepare(
+    `SELECT u.id FROM users u JOIN admins a ON a.user_id = u.id WHERE u.mocha_user_id = ? OR u.email_credential_id = (SELECT id FROM email_credentials WHERE LOWER(email) = LOWER(?))`
+  ).bind(mochaUser.id, mochaUser.email || "").first();
+  if (!adminUser) return c.json({ error: "Unauthorized - Admin access required" }, 401);
+
+  const { referrer_email, referred_email } = await c.req.json<{ referrer_email: string; referred_email: string }>();
+  if (!referrer_email || !referred_email) {
+    return c.json({ error: "referrer_email e referred_email são obrigatórios" }, 400);
+  }
+
+  const referrer = await c.env.DB.prepare(
+    `SELECT u.id, u.full_name FROM users u
+     LEFT JOIN email_credentials ec ON u.email_credential_id = ec.id
+     WHERE LOWER(u.email) = LOWER(?) OR LOWER(ec.email) = LOWER(?) LIMIT 1`
+  ).bind(referrer_email, referrer_email).first<{ id: number; full_name: string }>();
+  if (!referrer) return c.json({ error: `Indicador não encontrado: ${referrer_email}` }, 404);
+
+  const referred = await c.env.DB.prepare(
+    `SELECT u.id, u.full_name, u.email FROM users u
+     LEFT JOIN email_credentials ec ON u.email_credential_id = ec.id
+     WHERE LOWER(u.email) = LOWER(?) OR LOWER(ec.email) = LOWER(?) LIMIT 1`
+  ).bind(referred_email, referred_email).first<{ id: number; full_name: string; email: string }>();
+  if (!referred) return c.json({ error: `Indicado não encontrado: ${referred_email}` }, 404);
+
+  const referrer_user_id = referrer.id;
+  const referred_user_id = referred.id;
+
+  // Check if commission was already paid
+  const alreadyPaid = await c.env.DB.prepare(
+    "SELECT id FROM referrals WHERE referrer_user_id = ? AND referred_user_id = ? AND commission_paid = 1"
+  ).bind(referrer_user_id, referred_user_id).first();
+  if (alreadyPaid) return c.json({ error: "Comissão já foi paga para este par" }, 400);
+
+  const now = new Date().toISOString();
+  const commissionAmount = 30.00;
+
+  // Upsert referral record
+  const existing = await c.env.DB.prepare(
+    "SELECT id FROM referrals WHERE referrer_user_id = ? AND referred_user_id = ?"
+  ).bind(referrer_user_id, referred_user_id).first<{ id: number }>();
+
+  if (existing) {
+    await c.env.DB.prepare(
+      "UPDATE referrals SET status = 'approved', commission_paid = 1, commission_amount = ?, approved_at = ?, updated_at = ? WHERE id = ?"
+    ).bind(commissionAmount, now, now, existing.id).run();
+  } else {
+    // Also check for a pending email referral
+    const pendingByEmail = referred.email ? await c.env.DB.prepare(
+      "SELECT id FROM referrals WHERE referrer_user_id = ? AND LOWER(referred_email) = LOWER(?) AND commission_paid = 0"
+    ).bind(referrer_user_id, referred.email).first<{ id: number }>() : null;
+
+    if (pendingByEmail) {
+      await c.env.DB.prepare(
+        "UPDATE referrals SET referred_user_id = ?, status = 'approved', commission_paid = 1, commission_amount = ?, approved_at = ?, updated_at = ? WHERE id = ?"
+      ).bind(referred_user_id, commissionAmount, now, now, pendingByEmail.id).run();
+    } else {
+      await c.env.DB.prepare(
+        "INSERT INTO referrals (referrer_user_id, referred_user_id, referred_email, status, commission_paid, commission_amount, approved_at, created_at, updated_at) VALUES (?, ?, ?, 'approved', 1, ?, ?, ?, ?)"
+      ).bind(referrer_user_id, referred_user_id, referred.email || "", commissionAmount, now, now, now).run();
+    }
+  }
+
+  // Calculate balance and add transaction
+  const balanceResult = await c.env.DB.prepare(`
+    SELECT COALESCE(SUM(CASE
+      WHEN type IN ('commission_received', 'referral_commission') AND status = 'completed' THEN amount
+      WHEN type = 'withdrawal_completed' AND status = 'completed' THEN -amount
+      ELSE 0
+    END), 0) as current_balance
+    FROM user_transactions WHERE user_id = ?
+  `).bind(referrer_user_id).first<{ current_balance: number }>();
+
+  const newBalance = (balanceResult?.current_balance || 0) + commissionAmount;
+
+  await c.env.DB.prepare(
+    `INSERT INTO user_transactions (user_id, type, amount, description, status, balance_after, created_at, updated_at)
+     VALUES (?, 'referral_commission', ?, ?, 'completed', ?, ?, ?)`
+  ).bind(referrer_user_id, commissionAmount, `Bônus de indicação - ${referred.full_name}`, newBalance, now, now).run();
+
+  return c.json({
+    success: true,
+    message: `R$${commissionAmount.toFixed(2)} creditados para ${referrer.full_name} pela indicação de ${referred.full_name}`,
+  });
+});
+
 export default admin;
