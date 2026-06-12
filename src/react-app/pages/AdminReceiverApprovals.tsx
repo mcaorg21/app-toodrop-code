@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useApi } from "@/react-app/hooks/useApi";
 import { ReviewReceiverModal } from "@/react-app/components/ReviewReceiverModal";
-import { Loader2, Eye, User, MapPin, FileText, X, ZoomIn, Clock, AlertCircle, CheckCircle, XCircle, RefreshCw, ChevronDown, ChevronRight, Search, Home, Percent, Pencil, Save, Radio, Key, Map, AlertTriangle, MousePointer } from "lucide-react";
+import { Loader2, Eye, User, MapPin, FileText, X, ZoomIn, Clock, AlertCircle, CheckCircle, XCircle, RefreshCw, ChevronDown, ChevronRight, Search, Home, Percent, Pencil, Save, Radio, Key, Map, AlertTriangle, MousePointer, Gift } from "lucide-react";
 import { TooltipLabel } from "@/react-app/components/PersonaLabel";
 import { toProperCase } from "@/react-app/lib/utils";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from "react-leaflet";
@@ -285,6 +285,13 @@ interface PendingReceiver {
     last_ping: string | null;
     receiver_key: string | null;
   };
+  referral?: {
+    referrer_id: number;
+    referrer_name: string;
+    status: string;
+    commission_paid: boolean;
+    commission_amount: number | null;
+  } | null;
 }
 
 interface ImageModalProps {
@@ -437,6 +444,9 @@ export default function AdminReceiverApprovalsPage() {
   const [savingCommission, setSavingCommission] = useState(false);
   const [approvalError, setApprovalError] = useState<string | null>(null);
   
+  // Referral info modal
+  const [referralModalReceiver, setReferralModalReceiver] = useState<PendingReceiver | null>(null);
+
   // Map picker state for manual coordinates
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [mapPickerAddress, setMapPickerAddress] = useState<{ street: string; number: string; neighborhood: string; city: string; state: string; cep: string } | null>(null);
@@ -937,6 +947,18 @@ export default function AdminReceiverApprovalsPage() {
                     </span>
                   )}
                   
+                  {/* Referral badge */}
+                  {receiver.referral && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setReferralModalReceiver(receiver); }}
+                      title={`Indicado por ${toProperCase(receiver.referral.referrer_name)}`}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors"
+                    >
+                      <Gift className="w-3 h-3" />
+                      Indicado
+                    </button>
+                  )}
+
                   {/* Hub Status - only for approved */}
                   {receiver.approval_status === 'approved' && receiver.hub_status && (
                     receiver.hub_status.is_active && receiver.hub_status.active_hub ? (
@@ -1345,6 +1367,63 @@ export default function AdminReceiverApprovalsPage() {
           )}
         </div>
       </div>
+
+      {referralModalReceiver?.referral && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[300] backdrop-blur-sm" onClick={() => setReferralModalReceiver(null)}>
+          <div className="bg-white rounded-3xl shadow-strong w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b border-neutral-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-purple-100 p-2 rounded-xl">
+                  <Gift className="w-5 h-5 text-purple-600" />
+                </div>
+                <h2 className="text-lg font-bold text-neutral-900">Indicação</h2>
+              </div>
+              <button onClick={() => setReferralModalReceiver(null)} className="text-neutral-400 hover:text-neutral-600 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4 text-sm">
+              <div>
+                <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Ponto indicado</p>
+                <p className="font-semibold text-neutral-900">{toProperCase(referralModalReceiver.full_name)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Indicado por</p>
+                <p className="font-semibold text-neutral-900">{toProperCase(referralModalReceiver.referral.referrer_name)}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Status da indicação</p>
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                    referralModalReceiver.referral.status === 'approved'
+                      ? 'bg-green-100 text-green-700'
+                      : referralModalReceiver.referral.status === 'registered'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-neutral-100 text-neutral-600'
+                  }`}>
+                    {referralModalReceiver.referral.status === 'approved' ? 'Aprovada' :
+                     referralModalReceiver.referral.status === 'registered' ? 'Registrada' : 'Pendente'}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Comissão</p>
+                  {referralModalReceiver.referral.commission_paid ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                      <CheckCircle className="w-3 h-3" />
+                      R$ {(referralModalReceiver.referral.commission_amount ?? 30).toFixed(2)} pago
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                      <Clock className="w-3 h-3" />
+                      Aguardando
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {viewingImage && (
         <ImageModal

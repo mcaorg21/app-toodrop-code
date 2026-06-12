@@ -870,16 +870,21 @@ admin.get("/pending-receivers", unifiedAuthMiddleware, async (c) => {
   let query = `SELECT u.id as user_id, u.full_name, u.cpf, u.phone,
                       u.receiver_commission_percent, u.driver_commission_percent, u.platform_commission_percent,
                       u.is_receiver_pending, u.is_receiver_active,
-                      a.id as address_id, a.nickname, a.street, a.number, a.complement, a.neighborhood, 
+                      a.id as address_id, a.nickname, a.street, a.number, a.complement, a.neighborhood,
                       a.city, a.state, a.cep, a.latitude, a.longitude, a.receiver_key,
-                      rd.id as docs_id, rd.id_document_url, rd.id_document_back_url, rd.selfie_url, 
+                      rd.id as docs_id, rd.id_document_url, rd.id_document_back_url, rd.selfie_url,
                       rd.address_proof_url, rd.address_proof_type, rd.status as docs_status,
                       rd.created_at as submitted_at, rd.review_notes,
-                      rps.is_active, rps.active_hub, rps.last_ping, rps.service_price
+                      rps.is_active, rps.active_hub, rps.last_ping, rps.service_price,
+                      ref.id as referral_id, ref.status as referral_status,
+                      ref.commission_paid as referral_commission_paid, ref.commission_amount as referral_commission_amount,
+                      referrer.id as referrer_id, referrer.full_name as referrer_name
                FROM users u
                INNER JOIN addresses a ON u.id = a.user_id AND a.address_type = 'receiver'
                LEFT JOIN receiver_docs rd ON u.id = rd.user_id
-               LEFT JOIN receiver_point_status rps ON a.receiver_key = rps.receiver_key`;
+               LEFT JOIN receiver_point_status rps ON a.receiver_key = rps.receiver_key
+               LEFT JOIN referrals ref ON u.id = ref.referred_user_id
+               LEFT JOIN users referrer ON ref.referrer_user_id = referrer.id`;
 
   // Map frontend filter values to database conditions
   if (status === "inAnalysis") {
@@ -950,6 +955,13 @@ admin.get("/pending-receivers", unifiedAuthMiddleware, async (c) => {
       last_ping: r.last_ping,
       receiver_key: r.receiver_key,
     },
+    referral: r.referral_id ? {
+      referrer_id: r.referrer_id,
+      referrer_name: r.referrer_name,
+      status: r.referral_status,
+      commission_paid: r.referral_commission_paid === 1 || r.referral_commission_paid === true,
+      commission_amount: r.referral_commission_amount,
+    } : null,
   };
   });
 
