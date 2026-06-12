@@ -236,16 +236,20 @@ export default function LoginPage() {
       const storedReferralCode = localStorage.getItem("toodrop_referral_code");
       if (storedReferralCode) {
         try {
-          await fetch("/api/referrals/link-referred", {
+          const refRes = await fetch("/api/referrals/link-referred", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
             body: JSON.stringify({ referralCode: storedReferralCode }),
           });
-          // Clear the stored code regardless of result
-          localStorage.removeItem("toodrop_referral_code");
+          if (!refRes.ok) {
+            const refData = await refRes.json().catch(() => ({}));
+            console.error("[Referral] link-referred failed:", refRes.status, refData);
+          }
         } catch (err) {
           console.error("[Referral] Error linking referral:", err);
+        } finally {
+          localStorage.removeItem("toodrop_referral_code");
         }
       }
 
@@ -356,21 +360,8 @@ export default function LoginPage() {
         return;
       }
 
-      // Link referral if there's a stored referral code
-      const storedReferralCode = localStorage.getItem("toodrop_referral_code");
-      if (storedReferralCode) {
-        try {
-          await fetch("/api/referrals/link-referred", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ referralCode: storedReferralCode }),
-          });
-          localStorage.removeItem("toodrop_referral_code");
-        } catch (err) {
-          console.error("[Referral] Error linking referral:", err);
-        }
-      }
+      // Link referral if there's a stored referral code (not applicable for password reset, but clear it)
+      localStorage.removeItem("toodrop_referral_code");
 
       // Password reset successful - reload to update auth state
       window.location.href = "/";

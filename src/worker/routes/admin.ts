@@ -452,17 +452,37 @@ admin.post("/approve-receiver/:userId", unifiedAuthMiddleware, async (c) => {
 
   // Check if this user was referred and pay R$30 commission to referrer
   try {
-    const referral = await c.env.DB.prepare(
-      `SELECT r.*, u.full_name as referrer_name, u.email as referrer_email 
-       FROM referrals r 
-       JOIN users u ON u.id = r.referrer_user_id 
+    let referral = await c.env.DB.prepare(
+      `SELECT r.*, u.full_name as referrer_name, u.email as referrer_email
+       FROM referrals r
+       JOIN users u ON u.id = r.referrer_user_id
        WHERE r.referred_user_id = ? AND r.commission_paid = 0`
-    ).bind(userId).first<{ 
-      id: number; 
-      referrer_user_id: number; 
+    ).bind(userId).first<{
+      id: number;
+      referrer_user_id: number;
       referrer_name: string;
       referrer_email: string;
     }>();
+
+    // Fallback: match by email for referrals where link-referred didn't run
+    if (!referral && (targetUser as any).email) {
+      referral = await c.env.DB.prepare(
+        `SELECT r.*, u.full_name as referrer_name, u.email as referrer_email
+         FROM referrals r
+         JOIN users u ON u.id = r.referrer_user_id
+         WHERE LOWER(r.referred_email) = LOWER(?) AND r.commission_paid = 0 AND r.status != 'approved'`
+      ).bind((targetUser as any).email).first<{
+        id: number;
+        referrer_user_id: number;
+        referrer_name: string;
+        referrer_email: string;
+      }>();
+      if (referral) {
+        await c.env.DB.prepare(
+          "UPDATE referrals SET referred_user_id = ?, status = 'registered', updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+        ).bind(userId, referral.id).run();
+      }
+    }
 
     if (referral) {
       const commissionAmount = 30.00;

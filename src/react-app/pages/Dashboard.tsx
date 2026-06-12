@@ -89,7 +89,13 @@ export default function DashboardPage() {
         credentials: "include",
         body: JSON.stringify({ referralCode: storedReferralCode }),
       })
-        .then(() => localStorage.removeItem("toodrop_referral_code"))
+        .then(async (res) => {
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            console.error("[Referral] link-referred failed:", res.status, data);
+          }
+          localStorage.removeItem("toodrop_referral_code");
+        })
         .catch((err) => {
           console.error("[Referral] Error linking referral:", err);
           localStorage.removeItem("toodrop_referral_code");

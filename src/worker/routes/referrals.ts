@@ -220,101 +220,29 @@ referrals.get("/list", async (c) => {
   });
 });
 
-// Secret key for referral code encryption
-const REFERRAL_SECRET = "T00DR0P_R3F3RR4L_S3CR3T_K3Y_2024";
-
-// Generate a secure hash from user ID and mocha_user_id
+// Generate a referral code encoding userId and mochaUserId
 function encryptReferralCode(userId: number, mochaUserId: string): string {
-  // Combine userId and mochaUserId
-  const data = `${userId}:${mochaUserId}`;
-  
-  // Create a hash using XOR with the secret key
-  let hash = "";
-  for (let i = 0; i < data.length; i++) {
-    const charCode = data.charCodeAt(i) ^ REFERRAL_SECRET.charCodeAt(i % REFERRAL_SECRET.length);
-    hash += charCode.toString(16).padStart(2, "0");
-  }
-  
-  // Add a verification suffix based on userId
   const verifier = ((userId * 31337) % 65536).toString(16).padStart(4, "0");
-  
-  // Shuffle the hash to make it look more random
-  const shuffled = shuffleHash(hash + verifier);
-  
-  return shuffled;
+  const payload = `${userId}|${mochaUserId}|${verifier}`;
+  return Buffer.from(payload, "utf-8").toString("base64url");
 }
 
-// Decrypt the referral code to get userId
+// Decrypt the referral code to get userId and mochaUserId
 function decryptReferralCode(code: string): { userId: number; mochaUserId: string } | null {
   try {
-    // Unshuffle
-    const unshuffled = unshuffleHash(code);
-    
-    // Extract verifier (last 4 chars)
-    const verifier = unshuffled.slice(-4);
-    const hash = unshuffled.slice(0, -4);
-    
-    // Convert hex back to string
-    let data = "";
-    for (let i = 0; i < hash.length; i += 2) {
-      const hexByte = hash.substring(i, i + 2);
-      const charCode = parseInt(hexByte, 16) ^ REFERRAL_SECRET.charCodeAt((i / 2) % REFERRAL_SECRET.length);
-      data += String.fromCharCode(charCode);
-    }
-    
-    // Parse userId:mochaUserId
-    const [userIdStr, mochaUserId] = data.split(":");
-    const userId = parseInt(userIdStr, 10);
-    
-    if (isNaN(userId) || !mochaUserId) {
-      return null;
-    }
-    
-    // Verify the code
+    const payload = Buffer.from(code, "base64url").toString("utf-8");
+    const parts = payload.split("|");
+    if (parts.length < 3) return null;
+    const verifier = parts[parts.length - 1];
+    const userId = parseInt(parts[0], 10);
+    const mochaUserId = parts.slice(1, -1).join("|");
+    if (isNaN(userId) || !mochaUserId) return null;
     const expectedVerifier = ((userId * 31337) % 65536).toString(16).padStart(4, "0");
-    if (verifier !== expectedVerifier) {
-      return null;
-    }
-    
+    if (verifier !== expectedVerifier) return null;
     return { userId, mochaUserId };
   } catch {
     return null;
   }
-}
-
-// Shuffle hash to make it look random
-function shuffleHash(hash: string): string {
-  const chars = hash.split("");
-  const shufflePattern = [3, 7, 1, 5, 0, 4, 2, 6]; // Fixed shuffle pattern
-  const result: string[] = [];
-  
-  // Process in groups of 8, shuffling each group
-  for (let i = 0; i < chars.length; i += 8) {
-    const group = chars.slice(i, i + 8);
-    const shuffledGroup = shufflePattern.map(idx => group[idx] || "").join("");
-    result.push(shuffledGroup);
-  }
-  
-  return result.join("");
-}
-
-// Unshuffle hash back to original
-function unshuffleHash(hash: string): string {
-  const chars = hash.split("");
-  const shufflePattern = [3, 7, 1, 5, 0, 4, 2, 6];
-  const result: string[] = [];
-  
-  // Process in groups of 8, unshuffling each group
-  for (let i = 0; i < chars.length; i += 8) {
-    const group = chars.slice(i, i + 8);
-    const unshuffledGroup: string[] = new Array(8);
-    shufflePattern.forEach((idx, pos) => {
-      if (group[pos]) unshuffledGroup[idx] = group[pos];
-    });
-    result.push(unshuffledGroup.filter(c => c !== undefined).join(""));
-  }
-  
-  return result.join("");
 }
 
 // Link a newly registered user to their referrer (called after registration)
