@@ -342,6 +342,38 @@ export const referralInviteTemplate = ({
   `);
 };
 
+// Email notification when withdrawal is paid via Pix
+export const withdrawalPaidEmail = (fullName: string, amount: number) => {
+  const properName = toProperCase(fullName);
+  const formattedAmount = amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  const subject = "Seu saque foi processado!";
+
+  const html_body = emailTemplate(`
+    ${emailHeader("Saque realizado com sucesso!")}
+    ${emailBody(`
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 24px; color: #3f3f46;">
+        Olá <strong>${properName}</strong>,
+      </p>
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 24px; color: #3f3f46;">
+        Seu saque de <strong>${formattedAmount}</strong> foi processado e o valor foi enviado via <strong>Pix</strong> para a chave cadastrada.
+      </p>
+      <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 24px; color: #3f3f46;">
+        O crédito pode levar alguns instantes para aparecer na sua conta, dependendo do seu banco.
+      </p>
+      ${emailButton("Ver Extrato", "https://app.toodrop.com/")}
+      <p style="margin: 16px 0 0 0; font-size: 14px; line-height: 20px; color: #71717a;">
+        Se não receber o valor em até 1 hora, entre em contato com nosso suporte.
+      </p>
+    `)}
+    ${emailFooter("© 2025 Toodrop. Todos os direitos reservados.")}
+  `);
+
+  const text_body = `Olá ${properName}!\n\nSeu saque de ${formattedAmount} foi processado e o valor foi enviado via Pix para a chave cadastrada.\n\nO crédito pode levar alguns instantes para aparecer na sua conta.\n\nVer extrato: https://app.toodrop.com/\n\nSe não receber o valor em até 1 hora, entre em contato com nosso suporte.`;
+
+  return { subject, html_body, text_body };
+};
+
 export const broadcastEmail = (subject: string, htmlMessage: string) => {
   const html_body = emailTemplate(`
     ${emailBody(`

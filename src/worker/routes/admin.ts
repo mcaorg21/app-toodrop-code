@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 // import { unifiedAuthMiddleware } from "@getmocha/users-service/backend";
 import { unifiedAuthMiddleware } from "../middleware/auth";
-import { receiverPointApprovedEmail, receiverPointRejectedEmail, receiverPointPendingEmail, pendingHubReminderEmail, broadcastEmail } from "../utils/email-templates";
+import { receiverPointApprovedEmail, receiverPointRejectedEmail, receiverPointPendingEmail, pendingHubReminderEmail, broadcastEmail, withdrawalPaidEmail } from "../utils/email-templates";
 // Removed: import { createAsaasSubconta } from "../utils/asaas-helpers";
 
 const admin = new Hono<{ Bindings: Env }>();
@@ -2121,9 +2121,14 @@ admin.put("/withdrawals/:id", unifiedAuthMiddleware, async (c) => {
       return c.json({ error: "Status inválido" }, 400);
     }
 
-    // Get withdrawal request
+    // Get withdrawal request with user info for email
     const withdrawal = await c.env.DB.prepare(
-      "SELECT * FROM withdrawal_requests WHERE id = ?"
+      `SELECT wr.*, u.full_name, u.email as user_email,
+              ec.email as credential_email
+       FROM withdrawal_requests wr
+       JOIN users u ON wr.user_id = u.id
+       LEFT JOIN email_credentials ec ON u.email_credential_id = ec.id
+       WHERE wr.id = ?`
     ).bind(withdrawalId).first() as any;
 
     if (!withdrawal) {
@@ -2180,10 +2185,28 @@ admin.put("/withdrawals/:id", unifiedAuthMiddleware, async (c) => {
       -Number(withdrawal.amount)
     ).run();
 
+    // Send email notification when paid
+    if (status === "paid") {
+      const recipientEmail = withdrawal.user_email || withdrawal.credential_email;
+      if (c.env.EMAILS && recipientEmail && withdrawal.full_name) {
+        try {
+          const emailContent = withdrawalPaidEmail(withdrawal.full_name, Number(withdrawal.amount));
+          await c.env.EMAILS.send({
+            to: recipientEmail,
+            subject: emailContent.subject,
+            html_body: emailContent.html_body,
+            text_body: emailContent.text_body,
+          });
+        } catch (emailError) {
+          console.error("Failed to send withdrawal paid email:", emailError);
+        }
+      }
+    }
+
     return c.json({ success: true, message: "Status atualizado com sucesso" });
   } catch (error) {
     console.error("Error updating withdrawal:", error);
-    return c.json({ 
+    return c.json({
       error: "Erro ao atualizar status",
       details: error instanceof Error ? error.message : String(error)
     }, 500);
