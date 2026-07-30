@@ -702,7 +702,10 @@ receiver.post("/documents/upload/id-document", unifiedAuthMiddleware, async (c) 
 
     if (existingDocs) {
       await c.env.DB.prepare(
-        `UPDATE receiver_docs SET id_document_url = ?, id_document_back_url = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`
+        `UPDATE receiver_docs
+         SET id_document_url = ?, id_document_back_url = ?, status = 'pending',
+             review_notes = NULL, reviewed_at = NULL, updated_at = CURRENT_TIMESTAMP
+         WHERE user_id = ?`
       ).bind(idDocumentKey, idDocumentBackKey, userId).run();
     } else {
       // Include empty strings for selfie_url and address_proof_url to satisfy NOT NULL constraints
@@ -854,7 +857,10 @@ receiver.post("/documents/upload/selfie", unifiedAuthMiddleware, async (c) => {
 
     // Update receiver_docs record
     await c.env.DB.prepare(
-      `UPDATE receiver_docs SET selfie_url = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`
+      `UPDATE receiver_docs
+       SET selfie_url = ?, status = 'pending', review_notes = NULL,
+           reviewed_at = NULL, updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = ?`
     ).bind(selfieKey, userId).run();
 
     // Create pending validation record
@@ -956,7 +962,10 @@ receiver.post("/documents/upload/address-proof", unifiedAuthMiddleware, async (c
 
     // Update receiver_docs record and set user as pending
     await c.env.DB.prepare(
-      `UPDATE receiver_docs SET address_proof_url = ?, address_proof_type = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`
+      `UPDATE receiver_docs
+       SET address_proof_url = ?, address_proof_type = ?, status = 'pending',
+           review_notes = NULL, reviewed_at = NULL, updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = ?`
     ).bind(addressProofKey, addressProofType, userId).run();
 
     await c.env.DB.prepare(

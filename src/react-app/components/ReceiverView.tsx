@@ -323,7 +323,8 @@ export function ReceiverView({ profile, onProfileUpdate, onShowProfileSwitch }: 
 
   // Determine document status for display
   const isInAnalysis = docs?.status === "pending" && (!docs?.review_notes || docs?.review_notes === "");
-  const isPendingAction = docs?.status === "pending" && docs?.review_notes && docs?.review_notes !== "";
+  const isPendingAction = docs?.status === "action_required" ||
+    (docs?.status === "pending" && Boolean(docs?.review_notes));
   const isRejected = docs?.status === "rejected";
 
   // Icon grid items
@@ -812,12 +813,14 @@ export function ReceiverView({ profile, onProfileUpdate, onShowProfileSwitch }: 
                         <span className={`text-sm font-semibold ${
                           docs.status === "approved" ? "text-green-600" :
                           docs.status === "rejected" ? "text-red-600" :
+                          docs.status === "action_required" ? "text-amber-600" :
                           docs.status === "pending" && docs.all_docs_validated ? "text-blue-600" :
                           docs.status === "pending" && docs.review_notes ? "text-amber-600" :
                           "text-amber-600"
                         }`}>
                           {docs.status === "approved" ? t("receiver.approved") :
                            docs.status === "rejected" ? t("receiver.rejected") :
+                           docs.status === "action_required" ? t("receiver.docsView.awaitingAction") :
                            docs.status === "pending" && docs.all_docs_validated ? t("receiver.docsView.awaitingApproval") :
                            docs.status === "pending" && docs.review_notes ? t("receiver.docsView.awaitingAction") :
                            t("receiver.docsView.inAnalysis")}
@@ -849,7 +852,8 @@ export function ReceiverView({ profile, onProfileUpdate, onShowProfileSwitch }: 
                         </div>
                       )}
 
-                      {docs.status === "pending" && docs.review_notes && !docs.all_docs_validated ? (
+                      {(docs.status === "action_required" ||
+                        (docs.status === "pending" && docs.review_notes && !docs.all_docs_validated)) ? (
                         <button
                           onClick={() => setShowDocsModal(true)}
                           className="w-full bg-action-600 hover:bg-action-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 active:scale-95"

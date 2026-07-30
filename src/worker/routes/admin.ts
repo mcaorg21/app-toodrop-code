@@ -106,7 +106,7 @@ admin.get("/receiver-stats", unifiedAuthMiddleware, async (c) => {
     `SELECT COUNT(*) as count FROM users u
      INNER JOIN receiver_docs rd ON u.id = rd.user_id
      WHERE u.is_receiver_pending = 1
-       AND rd.status != 'rejected'
+       AND rd.status NOT IN ('rejected', 'action_required')
        AND ${completeReceiverDocsCondition}`
   ).first();
 
@@ -116,7 +116,10 @@ admin.get("/receiver-stats", unifiedAuthMiddleware, async (c) => {
      LEFT JOIN receiver_docs rd ON u.id = rd.user_id
      WHERE u.is_receiver_pending = 1
        AND (rd.status IS NULL OR rd.status != 'rejected')
-       AND NOT (${completeReceiverDocsCondition})`
+       AND (
+         rd.status = 'action_required'
+         OR NOT (${completeReceiverDocsCondition})
+       )`
   ).first();
 
   const approved = await c.env.DB.prepare(
@@ -786,12 +789,12 @@ admin.post("/set-pending/:userId", unifiedAuthMiddleware, async (c) => {
   if (existingDocs) {
     // Update existing receiver_docs with review_notes to maintain "Pendente" status
     await c.env.DB.prepare(
-      "UPDATE receiver_docs SET status = 'pending', review_notes = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?"
+      "UPDATE receiver_docs SET status = 'action_required', review_notes = ?, reviewed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?"
     ).bind(notes || "Requer nova análise", userId).run();
   } else {
     // Create receiver_docs record if it doesn't exist (for hubs approved without documents)
     await c.env.DB.prepare(
-      "INSERT INTO receiver_docs (user_id, id_document_url, selfie_url, address_proof_url, status, review_notes, created_at, updated_at) VALUES (?, '', '', '', 'pending', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+      "INSERT INTO receiver_docs (user_id, id_document_url, selfie_url, address_proof_url, status, review_notes, reviewed_at, created_at, updated_at) VALUES (?, '', '', '', 'action_required', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
     ).bind(userId, notes || "Requer nova análise").run();
   }
 
@@ -902,13 +905,16 @@ admin.get("/pending-receivers", unifiedAuthMiddleware, async (c) => {
   if (status === "inAnalysis") {
     // Em Análise: all required files have been submitted.
     query += ` WHERE u.is_receiver_pending = 1
-               AND rd.status != 'rejected'
+               AND rd.status NOT IN ('rejected', 'action_required')
                AND ${completeReceiverDocsCondition}`;
   } else if (status === "pendingAction") {
     // Pendente: at least one required file is still missing.
     query += ` WHERE u.is_receiver_pending = 1
                AND (rd.status IS NULL OR rd.status != 'rejected')
-               AND NOT (${completeReceiverDocsCondition})`;
+               AND (
+                 rd.status = 'action_required'
+                 OR NOT (${completeReceiverDocsCondition})
+               )`;
   } else if (status === "approved") {
     query += " WHERE u.is_receiver_active = 1";
   } else if (status === "rejected") {
@@ -932,6 +938,8 @@ admin.get("/pending-receivers", unifiedAuthMiddleware, async (c) => {
       approval_status = 'approved';
     } else if (r.docs_status === 'rejected') {
       approval_status = 'rejected';
+    } else if (r.docs_status === 'action_required') {
+      approval_status = 'pending_action';
     } else if (r.is_receiver_pending === 1 && hasCompleteDocs) {
       approval_status = 'in_analysis';
     } else if (r.is_receiver_pending === 1) {

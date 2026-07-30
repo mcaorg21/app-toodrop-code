@@ -161,7 +161,7 @@ export default function DashboardPage() {
         receiverDocs?.address_proof_url?.trim()
       );
 
-      if (!hasCompleteDocs) {
+      if (!hasCompleteDocs || receiverDocs?.status === "action_required") {
         setShowPendingDocsAlert(true);
       }
     }
