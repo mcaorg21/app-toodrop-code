@@ -914,7 +914,8 @@ export default function AdminReceiverApprovalsPage() {
                   <p className="font-semibold text-neutral-900 truncate">
                     {toProperCase(receiver.full_name)}
                   </p>
-                  <div className="flex items-center gap-3 text-sm text-neutral-500">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-neutral-500">
+                    <span>E-mail: {receiver.email || '-'}</span>
                     <span>CPF: {receiver.cpf}</span>
                     <span>Tel: {receiver.phone}</span>
                   </div>
@@ -1011,6 +1012,10 @@ export default function AdminReceiverApprovalsPage() {
                         <div className="flex justify-between">
                           <span className="text-neutral-600">Telefone:</span>
                           <span className="font-semibold text-neutral-900">{receiver.phone}</span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <span className="text-neutral-600">E-mail:</span>
+                          <span className="font-semibold text-neutral-900 break-all text-right">{receiver.email || '-'}</span>
                         </div>
                       </div>
                     </div>

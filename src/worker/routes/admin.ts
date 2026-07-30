@@ -882,7 +882,7 @@ admin.get("/pending-receivers", unifiedAuthMiddleware, async (c) => {
 
   const status = c.req.query("status");
 
-  let query = `SELECT u.id as user_id, u.full_name, u.cpf, u.phone,
+  let query = `SELECT u.id as user_id, u.full_name, u.email, u.cpf, u.phone,
                       u.receiver_commission_percent, u.driver_commission_percent, u.platform_commission_percent,
                       u.is_receiver_pending, u.is_receiver_active,
                       a.id as address_id, a.nickname, a.street, a.number, a.complement, a.neighborhood,
@@ -949,6 +949,7 @@ admin.get("/pending-receivers", unifiedAuthMiddleware, async (c) => {
     return {
     user_id: r.user_id,
     full_name: r.full_name,
+    email: r.email,
     cpf: r.cpf,
     phone: r.phone,
     approval_status,

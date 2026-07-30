@@ -231,7 +231,7 @@ export function AdminUsers() {
     if (!user) return;
     setEditingUserId(userId);
     setEditFullName(user.full_name || "");
-    setEditBirthDate(user.birth_date || "");
+    setEditBirthDate(user.birth_date ? String(user.birth_date).slice(0, 10) : "");
     setEditError(null);
   };
 
