@@ -6,6 +6,14 @@ import { receiverPointApprovedEmail, receiverPointRejectedEmail, receiverPointPe
 
 const admin = new Hono<{ Bindings: Env }>();
 
+// A document can contain front and back in the same file. The separate back
+// file is therefore optional when deciding if a submission is ready to review.
+const completeReceiverDocsCondition = `
+  NULLIF(TRIM(rd.id_document_url), '') IS NOT NULL
+  AND NULLIF(TRIM(rd.selfie_url), '') IS NOT NULL
+  AND NULLIF(TRIM(rd.address_proof_url), '') IS NOT NULL
+`;
+
 // Helper function to get user query based on auth type
 function getUserQuery(c: any): { field: string; value: any; email: string | null } | null {
   const user = c.get("user");
@@ -93,18 +101,22 @@ admin.get("/receiver-stats", unifiedAuthMiddleware, async (c) => {
     return c.json({ error: "Unauthorized - Admin access required" }, 401);
   }
 
-  // Em Análise: pending status, never reviewed (no review_notes)
+  // Em Análise: all required files have been submitted.
   const inAnalysis = await c.env.DB.prepare(
     `SELECT COUNT(*) as count FROM users u
      INNER JOIN receiver_docs rd ON u.id = rd.user_id
-     WHERE u.is_receiver_pending = 1 AND rd.review_notes IS NULL`
+     WHERE u.is_receiver_pending = 1
+       AND rd.status != 'rejected'
+       AND ${completeReceiverDocsCondition}`
   ).first();
 
-  // Pendente: pending status, but was reviewed (has review_notes)
+  // Pendente: at least one required file is still missing.
   const pendingAction = await c.env.DB.prepare(
     `SELECT COUNT(*) as count FROM users u
-     INNER JOIN receiver_docs rd ON u.id = rd.user_id
-     WHERE u.is_receiver_pending = 1 AND rd.review_notes IS NOT NULL`
+     LEFT JOIN receiver_docs rd ON u.id = rd.user_id
+     WHERE u.is_receiver_pending = 1
+       AND (rd.status IS NULL OR rd.status != 'rejected')
+       AND NOT (${completeReceiverDocsCondition})`
   ).first();
 
   const approved = await c.env.DB.prepare(
@@ -888,11 +900,15 @@ admin.get("/pending-receivers", unifiedAuthMiddleware, async (c) => {
 
   // Map frontend filter values to database conditions
   if (status === "inAnalysis") {
-    // Em Análise: pending and never reviewed (no review_notes)
-    query += " WHERE u.is_receiver_pending = 1 AND rd.review_notes IS NULL";
+    // Em Análise: all required files have been submitted.
+    query += ` WHERE u.is_receiver_pending = 1
+               AND rd.status != 'rejected'
+               AND ${completeReceiverDocsCondition}`;
   } else if (status === "pendingAction") {
-    // Pendente: pending but was reviewed (has review_notes)
-    query += " WHERE u.is_receiver_pending = 1 AND rd.review_notes IS NOT NULL";
+    // Pendente: at least one required file is still missing.
+    query += ` WHERE u.is_receiver_pending = 1
+               AND (rd.status IS NULL OR rd.status != 'rejected')
+               AND NOT (${completeReceiverDocsCondition})`;
   } else if (status === "approved") {
     query += " WHERE u.is_receiver_active = 1";
   } else if (status === "rejected") {
@@ -906,15 +922,20 @@ admin.get("/pending-receivers", unifiedAuthMiddleware, async (c) => {
   // Transform results to match frontend expected structure
   const formattedResults = results.map((r: any) => {
     // Calculate approval_status based on flags
+    const hasCompleteDocs = Boolean(
+      r.id_document_url?.trim() &&
+      r.selfie_url?.trim() &&
+      r.address_proof_url?.trim()
+    );
     let approval_status: 'in_analysis' | 'pending_action' | 'approved' | 'rejected' = 'in_analysis';
     if (r.is_receiver_active === 1) {
       approval_status = 'approved';
     } else if (r.docs_status === 'rejected') {
       approval_status = 'rejected';
-    } else if (r.is_receiver_pending === 1 && r.review_notes) {
-      approval_status = 'pending_action';
-    } else if (r.is_receiver_pending === 1) {
+    } else if (r.is_receiver_pending === 1 && hasCompleteDocs) {
       approval_status = 'in_analysis';
+    } else if (r.is_receiver_pending === 1) {
+      approval_status = 'pending_action';
     }
     
     return {

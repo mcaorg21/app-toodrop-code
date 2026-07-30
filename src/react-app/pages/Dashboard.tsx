@@ -9,6 +9,7 @@ import { CompleteProfileModal } from "@/react-app/components/CompleteProfileModa
 import { ProfileSwitchModal } from "@/react-app/components/ProfileSwitchModal";
 import { CommissionAddressModal } from "@/react-app/components/CommissionAddressModal";
 import { AlertModal } from "@/react-app/components/AlertModal";
+import { ReceiverDocsModal } from "@/react-app/components/ReceiverDocsModal";
 import { ConsumerView } from "@/react-app/components/ConsumerView";
 import { ReceiverView } from "@/react-app/components/ReceiverView";
 import { DeliveryView } from "@/react-app/components/DeliveryView";
@@ -17,7 +18,7 @@ import { Loader2 } from "lucide-react";
 
 export default function DashboardPage() {
   const { t } = useTranslation();
-  const { fetchProfile, updateLastActiveTab } = useApi();
+  const { fetchProfile, fetchReceiverDocuments, updateLastActiveTab } = useApi();
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<User | null>(null);
@@ -76,6 +77,8 @@ export default function DashboardPage() {
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [showExtract, setShowExtract] = useState(false);
   const [showProfileSwitch, setShowProfileSwitch] = useState(false);
+  const [showPendingDocsAlert, setShowPendingDocsAlert] = useState(false);
+  const [showPendingDocsUpload, setShowPendingDocsUpload] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -146,7 +149,34 @@ export default function DashboardPage() {
 
     if (data && data.profile_status === "incomplete") {
       setShowCompleteProfile(true);
+    } else if (
+      data?.main_interest === "receiver" &&
+      data.is_receiver_pending === 1 &&
+      data.is_receiver_active !== 1
+    ) {
+      const receiverDocs = await fetchReceiverDocuments();
+      const hasCompleteDocs = Boolean(
+        receiverDocs?.id_document_url?.trim() &&
+        receiverDocs?.selfie_url?.trim() &&
+        receiverDocs?.address_proof_url?.trim()
+      );
+
+      if (!hasCompleteDocs) {
+        setShowPendingDocsAlert(true);
+      }
     }
+  };
+
+  const handleOpenPendingDocuments = () => {
+    setActiveTab("receiver");
+    updateLastActiveTab("receiver");
+    setShowPendingDocsUpload(true);
+  };
+
+  const handlePendingDocumentsSubmitted = async () => {
+    setShowPendingDocsUpload(false);
+    setShowPendingDocsAlert(false);
+    await loadProfile();
   };
 
   const handleProfileComplete = async () => {
@@ -389,6 +419,24 @@ export default function DashboardPage() {
         confirmText={t("dashboard.understood")}
       />
 
+      <AlertModal
+        isOpen={showPendingDocsAlert}
+        onClose={() => setShowPendingDocsAlert(false)}
+        title="Documentação pendente"
+        message="Para concluir seu cadastro como TooDropper, você precisa enviar o restante da documentação."
+        type="warning"
+        confirmText="Enviar documentos"
+        cancelText="Agora não"
+        onConfirm={handleOpenPendingDocuments}
+      />
+
+      {showPendingDocsUpload && (
+        <ReceiverDocsModal
+          onClose={() => setShowPendingDocsUpload(false)}
+          onSuccess={handlePendingDocumentsSubmitted}
+        />
+      )}
+
       {showExtract && (
         <ExtractView onBack={() => setShowExtract(false)} />
       )}
@@ -420,4 +468,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
