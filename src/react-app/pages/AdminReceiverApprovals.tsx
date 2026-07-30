@@ -626,6 +626,7 @@ export default function AdminReceiverApprovalsPage() {
     const search = searchTerm.toLowerCase();
     return (
       receiver.full_name.toLowerCase().includes(search) ||
+      (receiver.email?.toLowerCase() || '').includes(search) ||
       receiver.cpf.includes(search) ||
       receiver.phone.includes(search) ||
       (receiver.address?.nickname?.toLowerCase() || '').includes(search) ||
@@ -841,7 +842,7 @@ export default function AdminReceiverApprovalsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
             <input
               type="text"
-              placeholder="Buscar por nome, CPF, telefone, endereço, cidade, bairro ou chave..."
+              placeholder="Buscar por nome, e-mail, CPF, telefone, endereço, cidade, bairro ou chave..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"

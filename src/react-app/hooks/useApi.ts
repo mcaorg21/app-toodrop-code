@@ -845,6 +845,23 @@ export function useApi() {
     }
   };
 
+  const updateAdminUser = async (
+    userId: number,
+    data: { full_name: string; birth_date: string }
+  ): Promise<{ success: boolean; user: { full_name: string; birth_date: string } }> => {
+    const response = await fetch(`/api/admin/users/${userId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.error || "Erro ao atualizar usuário");
+    }
+    return await response.json();
+  };
+
   const apiMethods = {
     isLoading,
     error,
@@ -885,6 +902,7 @@ export function useApi() {
     getReceiverDeliveries,
     fetchAllUsers,
     fetchUserDetails,
+    updateAdminUser,
     toggleUserActive,
     toggleUserAdmin,
     getWalletExtract,

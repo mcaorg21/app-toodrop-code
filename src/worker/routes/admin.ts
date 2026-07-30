@@ -1632,6 +1632,72 @@ admin.get("/users/:userId", unifiedAuthMiddleware, async (c) => {
   });
 });
 
+// Update editable user profile fields
+admin.patch("/users/:userId", unifiedAuthMiddleware, async (c) => {
+  const mochaUser = c.get("user");
+  if (!mochaUser) return c.json({ error: "Unauthorized" }, 401);
+
+  const adminUser = await c.env.DB.prepare(
+    "SELECT id FROM users WHERE mocha_user_id = ?"
+  ).bind(mochaUser.id).first();
+  if (!adminUser) return c.json({ error: "Unauthorized" }, 401);
+
+  const adminRecord = await c.env.DB.prepare(
+    "SELECT id FROM admins WHERE user_id = ?"
+  ).bind(adminUser.id).first();
+  if (!adminRecord) {
+    return c.json({ error: "Unauthorized - Admin access required" }, 401);
+  }
+
+  const userId = Number(c.req.param("userId"));
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return c.json({ error: "Usuário inválido" }, 400);
+  }
+
+  let body: { full_name?: unknown; birth_date?: unknown };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Dados inválidos" }, 400);
+  }
+
+  const fullName = typeof body.full_name === "string" ? body.full_name.trim() : "";
+  const birthDate = typeof body.birth_date === "string" ? body.birth_date : "";
+  if (fullName.length < 2 || fullName.length > 150) {
+    return c.json({ error: "Informe um nome válido" }, 400);
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
+    return c.json({ error: "Informe uma data de nascimento válida" }, 400);
+  }
+
+  const [year, month, day] = birthDate.split("-").map(Number);
+  const parsedDate = new Date(Date.UTC(year, month - 1, day));
+  if (
+    parsedDate.getUTCFullYear() !== year ||
+    parsedDate.getUTCMonth() !== month - 1 ||
+    parsedDate.getUTCDate() !== day ||
+    parsedDate > new Date()
+  ) {
+    return c.json({ error: "Informe uma data de nascimento válida" }, 400);
+  }
+
+  const existingUser = await c.env.DB.prepare(
+    "SELECT id FROM users WHERE id = ?"
+  ).bind(userId).first();
+  if (!existingUser) return c.json({ error: "Usuário não encontrado" }, 404);
+
+  await c.env.DB.prepare(
+    `UPDATE users
+     SET full_name = ?, birth_date = ?, updated_at = CURRENT_TIMESTAMP
+     WHERE id = ?`
+  ).bind(fullName, birthDate, userId).run();
+
+  return c.json({
+    success: true,
+    user: { full_name: fullName, birth_date: birthDate },
+  });
+});
+
 // Get system stats
 admin.get("/stats", adminMiddleware, async (c) => {
   const totalUsers = await c.env.DB.prepare(

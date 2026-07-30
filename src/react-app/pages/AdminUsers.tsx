@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useApi } from "@/react-app/hooks/useApi";
 import { 
   Search, User, MapPin, Package, Truck, Home, Calendar, Clock, 
-  CheckCircle2, XCircle, AlertCircle, Power, Copy, Check, ChevronDown, ChevronRight, X, Shield, Trash2
+  CheckCircle2, XCircle, AlertCircle, Power, Copy, Check, ChevronDown, ChevronRight, X, Shield, Trash2, Pencil, Save
 } from "lucide-react";
 import { TooltipLabel } from "@/react-app/components/PersonaLabel";
 import { toProperCase } from "@/react-app/lib/utils";
@@ -89,6 +89,11 @@ export function AdminUsers() {
   const [deletePassword, setDeletePassword] = useState("");
   const [deletingUser, setDeletingUser] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [editFullName, setEditFullName] = useState("");
+  const [editBirthDate, setEditBirthDate] = useState("");
+  const [savingUser, setSavingUser] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   useEffect(() => {
     loadUsers();
@@ -218,6 +223,56 @@ export function AdminUsers() {
       setDeleteError(error instanceof Error ? error.message : "Erro ao deletar usuário");
     } finally {
       setDeletingUser(false);
+    }
+  };
+
+  const startEditingUser = (userId: number) => {
+    const user = userDetails[userId]?.user;
+    if (!user) return;
+    setEditingUserId(userId);
+    setEditFullName(user.full_name || "");
+    setEditBirthDate(user.birth_date || "");
+    setEditError(null);
+  };
+
+  const cancelEditingUser = () => {
+    setEditingUserId(null);
+    setEditError(null);
+  };
+
+  const handleSaveUser = async (userId: number) => {
+    const fullName = editFullName.trim();
+    if (fullName.length < 2) {
+      setEditError("Informe um nome válido.");
+      return;
+    }
+    if (!editBirthDate) {
+      setEditError("Informe a data de nascimento.");
+      return;
+    }
+
+    setSavingUser(true);
+    setEditError(null);
+    try {
+      const result = await api.updateAdminUser(userId, {
+        full_name: fullName,
+        birth_date: editBirthDate,
+      });
+      setUsers(prev => prev.map(user =>
+        user.id === userId ? { ...user, full_name: result.user.full_name } : user
+      ));
+      setUserDetails(prev => ({
+        ...prev,
+        [userId]: {
+          ...prev[userId],
+          user: { ...prev[userId].user, ...result.user },
+        },
+      }));
+      setEditingUserId(null);
+    } catch (error) {
+      setEditError(error instanceof Error ? error.message : "Erro ao atualizar usuário");
+    } finally {
+      setSavingUser(false);
     }
   };
 
@@ -384,21 +439,74 @@ export function AdminUsers() {
                   <div className="space-y-4 pt-4">
                     {/* Basic Info */}
                     <div className="py-4 border-b border-neutral-200">
-                      <h3 className="text-sm font-semibold text-neutral-800 mb-3 flex items-center gap-2">
-                        <User className="w-4 h-4" />
-                        Informações Básicas
-                      </h3>
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <h3 className="text-sm font-semibold text-neutral-800 flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          Informações Básicas
+                        </h3>
+                        {editingUserId !== user.id && (
+                          <button
+                            type="button"
+                            onClick={() => startEditingUser(user.id)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                            Editar
+                          </button>
+                        )}
+                      </div>
                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 bg-white rounded-lg p-4 border border-neutral-200">
-                        <CopiableField label="Nome" value={toProperCase(userDetails[user.id].user.full_name)} />
+                        {editingUserId === user.id ? (
+                          <>
+                            <label className="block">
+                              <span className="text-xs text-neutral-500">Nome</span>
+                              <input
+                                type="text"
+                                value={editFullName}
+                                onChange={(e) => setEditFullName(e.target.value)}
+                                maxLength={150}
+                                className="mt-1 w-full px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="text-xs text-neutral-500">Data de Nascimento</span>
+                              <input
+                                type="date"
+                                value={editBirthDate}
+                                max={new Date().toISOString().slice(0, 10)}
+                                onChange={(e) => setEditBirthDate(e.target.value)}
+                                className="mt-1 w-full px-3 py-2 text-sm border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              />
+                            </label>
+                          </>
+                        ) : (
+                          <>
+                            <CopiableField label="Nome" value={toProperCase(userDetails[user.id].user.full_name)} />
+                            <CopiableField label="Data de Nascimento" value={userDetails[user.id].user.birth_date} formatDate />
+                          </>
+                        )}
                         <CopiableField label="CPF" value={userDetails[user.id].user.cpf} />
                         <CopiableField label="Telefone" value={userDetails[user.id].user.phone} />
                         <CopiableField label="Email" value={userDetails[user.id].user.email} />
-                        <CopiableField label="Data de Nascimento" value={userDetails[user.id].user.birth_date} formatDate />
                         <CopiableField label="Interesse Principal" value={getInterestLabel(userDetails[user.id].user.main_interest)} />
                         <CopiableField label="PIX" value={userDetails[user.id].user.pix_key} />
                         <CopiableField label="ID Asaas Cliente" value={userDetails[user.id].user.id_customer_asaas} />
                         <CopiableField label="ID Asaas Conta" value={userDetails[user.id].user.asaas_account_id} />
                         <CopiableField label="Wallet ID Asaas" value={userDetails[user.id].user.asaas_wallet_id} />
+                        {editingUserId === user.id && (
+                          <div className="col-span-2 lg:col-span-4">
+                            {editError && <p className="mb-2 text-sm text-red-600">{editError}</p>}
+                            <div className="flex justify-end gap-2">
+                              <button type="button" onClick={cancelEditingUser} disabled={savingUser} className="px-3 py-2 text-sm border border-neutral-300 rounded-lg hover:bg-neutral-50 disabled:opacity-50">
+                                Cancelar
+                              </button>
+                              <button type="button" onClick={() => handleSaveUser(user.id)} disabled={savingUser} className="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50">
+                                <Save className="w-4 h-4" />
+                                {savingUser ? "Salvando..." : "Salvar"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
