@@ -622,20 +622,27 @@ export default function AdminReceiverApprovalsPage() {
     setViewingImage({ url, title });
   };
 
-  const filteredReceivers = pendingReceivers.filter(receiver => {
-    const search = searchTerm.toLowerCase();
-    return (
-      receiver.full_name.toLowerCase().includes(search) ||
-      (receiver.email?.toLowerCase() || '').includes(search) ||
-      receiver.cpf.includes(search) ||
-      receiver.phone.includes(search) ||
-      (receiver.address?.nickname?.toLowerCase() || '').includes(search) ||
-      (receiver.address?.city?.toLowerCase() || '').includes(search) ||
-      (receiver.address?.neighborhood?.toLowerCase() || '').includes(search) ||
-      (receiver.address?.street?.toLowerCase() || '').includes(search) ||
-      (receiver.hub_status?.receiver_key?.toLowerCase() || '').includes(search)
-    );
-  });
+  const filteredReceivers = pendingReceivers
+    .filter(receiver => {
+      const search = searchTerm.toLowerCase();
+      return (
+        receiver.full_name.toLowerCase().includes(search) ||
+        (receiver.email?.toLowerCase() || '').includes(search) ||
+        receiver.cpf.includes(search) ||
+        receiver.phone.includes(search) ||
+        (receiver.address?.nickname?.toLowerCase() || '').includes(search) ||
+        (receiver.address?.city?.toLowerCase() || '').includes(search) ||
+        (receiver.address?.neighborhood?.toLowerCase() || '').includes(search) ||
+        (receiver.address?.street?.toLowerCase() || '').includes(search) ||
+        (receiver.hub_status?.receiver_key?.toLowerCase() || '').includes(search)
+      );
+    })
+    .sort((a, b) => {
+      // "Em Análise" always appears first, regardless of creation date
+      const aFirst = a.approval_status === 'in_analysis' ? 0 : 1;
+      const bFirst = b.approval_status === 'in_analysis' ? 0 : 1;
+      return aFirst - bFirst;
+    });
 
   // Calculate map center and markers
   const hubsWithCoordinates = useMemo(() => {
