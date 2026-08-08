@@ -1031,5 +1031,15 @@
     "period2End": "Período 2 - Fim",
     "saving": "Salvando...",
     "save": "Salvar horários"
+  },
+  "installPrompt": {
+    "title": "Instale o Toodrop no seu celular",
+    "description": "Acesse mais rápido, direto da sua tela inicial, como um app nativo.",
+    "installButton": "Instalar",
+    "laterButton": "Agora não",
+    "iosTitle": "Instale o Toodrop na tela inicial",
+    "iosStep1": "Toque em Compartilhar",
+    "iosStep2": "Depois em \"Adicionar à Tela de Início\"",
+    "iosDismiss": "Entendi"
   }
 }

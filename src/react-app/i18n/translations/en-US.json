@@ -989,5 +989,15 @@
     "period2End": "Period 2 - End",
     "saving": "Saving...",
     "save": "Save schedule"
+  },
+  "installPrompt": {
+    "title": "Install Toodrop on your phone",
+    "description": "Get faster access straight from your home screen, like a native app.",
+    "installButton": "Install",
+    "laterButton": "Not now",
+    "iosTitle": "Install Toodrop on your home screen",
+    "iosStep1": "Tap Share",
+    "iosStep2": "Then tap \"Add to Home Screen\"",
+    "iosDismiss": "Got it"
   }
 }
